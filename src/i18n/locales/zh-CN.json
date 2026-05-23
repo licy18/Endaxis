@@ -38,7 +38,76 @@
     },
     "warning": "警告"
   },
-  "locale": {
+  "battleLog": {
+    "title": "战斗日志",
+    "refresh": "刷新",
+    "copy": "复制",
+    "searchPlaceholder": "搜索日志...",
+    "typeFilter": "类型",
+    "limit": "条数",
+    "dirtyHint": "有更新",
+    "types": {
+      "ACTION_START": "动作开始",
+      "ACTION_END": "动作结束",
+      "DAMAGE_TICK": "伤害",
+      "SP_CHANGE": "技力变化",
+      "SP_REGEN_PAUSE": "技力暂停回复",
+      "ULTIMATE_CHARGE_CHANGE": "终结技充能",
+      "STAGGER": "失衡",
+      "EFFECT_START": "附着/异常开始",
+      "EFFECT_END": "附着/异常结束",
+      "REACTION_OCCURRED": "反应",
+      "EFFECT_APPLIED": "效果应用"
+    },
+    "ui": {
+      "filtered": "条目",
+      "actionGroups": "技能",
+      "noResults": "当前筛选下没有可显示的战斗事件。",
+      "selectAll": "全选",
+      "clear": "清空",
+      "allResults": "全部",
+      "start": "开始",
+      "end": "结束",
+      "damageHint": "伤害数值尚未接入完整计算，当前日志中的数值可能为 0。",
+      "effectApply": "附着",
+      "effectRemove": "移除",
+      "orphans": "未归属事件",
+      "lines": "条目",
+      "broken": "破防",
+      "sections": {
+        "damage": "伤害",
+        "effects": "附着 / 反应",
+        "sp": "技力",
+        "gauge": "终结技充能",
+        "stagger": "失衡",
+        "other": "其他"
+      }
+    },
+    "summary": {
+      "damage": "伤害",
+      "gauge": "充能",
+      "stagger": "失衡"
+    },
+    "effectNames": {
+      "ELEMENT_HEAT": "灼热附着",
+      "ELEMENT_CRYO": "寒冷附着",
+      "ELEMENT_ELECTRIC": "电磁附着",
+      "ELEMENT_NATURE": "自然附着",
+      "ELEMENT_COMBUSTION": "燃烧",
+      "ELEMENT_ELECTRIFICATION": "导电",
+      "ELEMENT_SOLIDIFICATION": "冻结",
+      "ELEMENT_CORROSION": "腐蚀",
+      "ELEMENT_HEAT_BURST": "灼热爆发",
+      "ELEMENT_CRYO_BURST": "寒冷爆发",
+      "ELEMENT_ELECTRIC_BURST": "电磁爆发",
+      "ELEMENT_NATURE_BURST": "自然爆发",
+      "PHYSICAL_VULNERABLE": "破防",
+      "PHYSICAL_KNOCK_DOWN": "倒地",
+      "PHYSICAL_LIFT": "击飞",
+      "PHYSICAL_CRUSH": "猛击",
+      "PHYSICAL_BREACH": "碎甲"
+    }
+  },  "locale": {
     "en": "English",
     "ru": "Русский",
     "zhCN": "简体中文"
@@ -220,7 +289,6 @@
     },
     "toolbar": {
       "boxSelect": "框选 (Ctrl+B)",
-      "compilerToggle": "新编译器 (Ctrl+G)",
       "connectionTool": "连线工具 (Alt+L)",
       "cursorGuide": "辅助线 (Ctrl+G)",
       "snapPrecision": "吸附精度 (Alt+S)"
@@ -395,8 +463,8 @@
       "triggerWindowS": "触发窗口(f)",
       "spCost": "技力消耗",
       "gaugeCost": "充能消耗",
-      "gaugeGain": "自身充能",
-      "teamGaugeGain": "队友充能",
+      "gaugeGain": "自身额外充能",
+      "teamGaugeGain": "队友额外充能",
       "enhancementTimeS": "强化时间(f)",
       "followupDelayS": "下一段间隔(f)",
       "comboSegment": "连携段",

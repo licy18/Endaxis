@@ -176,7 +176,7 @@ function normalizeAttackSegmentsForCharacter(char) {
 export const useTimelineStore = defineStore('timeline', () => {
 
     // ===================================================================================
-    // 系统配置与常量
+    // System configuration and constants
     // ===================================================================================
 
     const DEFAULT_SYSTEM_CONSTANTS = {
@@ -277,14 +277,14 @@ export const useTimelineStore = defineStore('timeline', () => {
     const getColor = (key) => ELEMENT_COLORS[key] || ELEMENT_COLORS.default
 
     const ENEMY_TIERS = [
-        { labelKey: 'enemyTier.normal', label: '普通', value: 'normal', color: '#a0a0a0' },
-        { labelKey: 'enemyTier.elite', label: '进阶', value: 'elite', color: '#52c41a' },
-        { labelKey: 'enemyTier.champion', label: '精英', value: 'champion', color: '#d8b4fe' },
-        { labelKey: 'enemyTier.head', label: '头目', value: 'head', color: '#ffd700' },
-        { labelKey: 'enemyTier.boss', label: '领袖', value: 'boss', color: '#ff4d4f' }
+        { labelKey: 'enemyTier.normal', label: 'Normal', value: 'normal', color: '#a0a0a0' },
+        { labelKey: 'enemyTier.elite', label: 'Elite', value: 'elite', color: '#52c41a' },
+        { labelKey: 'enemyTier.champion', label: 'Champion', value: 'champion', color: '#d8b4fe' },
+        { labelKey: 'enemyTier.head', label: 'Head', value: 'head', color: '#ffd700' },
+        { labelKey: 'enemyTier.boss', label: 'Boss', value: 'boss', color: '#ff4d4f' }
     ]
     // ===================================================================================
-    // 核心数据状态
+    // Core reactive state
     // ===================================================================================
 
     const isLoading = ref(true)
@@ -657,7 +657,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 交互状态
+    // Interaction state
     // ===================================================================================
 
     const activeTrackId = ref(null)
@@ -707,7 +707,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     const isActionSelected = (id) => selectedActionId.value === id || multiSelectedIds.value.has(id)
 
     // ===================================================================================
-    // 历史记录 (Undo/Redo)
+    // History state (undo/redo)
     // ===================================================================================
 
     const historyStack = ref([])
@@ -771,7 +771,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 方案管理逻辑 (Scenarios)
+    // Scenario management
     // ===================================================================================
 
     function _createSnapshot() {
@@ -826,7 +826,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 连线拖拽
+    // Connection drag state
     // ===================================================================================
     const enableConnectionTool = ref(false)
 
@@ -956,7 +956,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 辅助计算 (Getters & Helpers)
+    // Getters and helpers
     // ===================================================================================
 
     const timeBlockWidth = computed(() => BASE_BLOCK_WIDTH.value)
@@ -2047,10 +2047,10 @@ export const useTimelineStore = defineStore('timeline', () => {
         activeEnemyId.value = enemyId
 
         if (enemyId === 'custom') {
-            // 切回自定义时，从备份恢复数值
+            // Restore custom parameters when switching back to the custom enemy.
             Object.assign(systemConstants.value, customEnemyParams.value)
         } else {
-            // 切换到预设敌人
+            // Apply the selected preset enemy.
             const enemy = enemyDatabase.value.find(e => e.id === enemyId)
             if (enemy) {
                 systemConstants.value.maxStagger = enemy.maxStagger
@@ -2063,7 +2063,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 实体操作 (CRUD)
+    // Entity CRUD operations
     // ===================================================================================
 
     function setTimelineShift(val) {
@@ -3053,12 +3053,12 @@ export const useTimelineStore = defineStore('timeline', () => {
 
         let newStartTime = sourceAction.startTime
 
-        // 计算对齐后的渲染位置
+        // Compute the aligned render position.
         switch (alignMode) {
-            case 'RL': newStartTime = tStart - sDur; break // [前接]
-            case 'LR': newStartTime = tEnd + sourceTw; break // [后接]
-            case 'LL': newStartTime = tStart + sourceTw; break // [左对齐]
-            case 'RR': newStartTime = tEnd - sDur; break // [右对齐]
+            case 'RL': newStartTime = tStart - sDur; break
+            case 'LR': newStartTime = tEnd + sourceTw; break
+            case 'LL': newStartTime = tStart + sourceTw; break
+            case 'RR': newStartTime = tEnd - sDur; break
         }
 
         newStartTime = snapTimeToFrame(newStartTime)
@@ -3159,24 +3159,13 @@ export const useTimelineStore = defineStore('timeline', () => {
         getStart: (action) => action.realStartTime,
     }))
 
-    const legacyActionCoverStartMap = computed(() => buildNextStartMap(
-        tracks.value.flatMap((track, trackIndex) => (track?.actions || []).map(action => ({ action, trackIndex }))),
-        {
-            getId: (entry) => entry.action.instanceId,
-            getTrackIndex: (entry) => entry.trackIndex,
-            getStart: (entry) => entry.action.startTime,
-            isVisible: (entry) => (entry.action?.triggerWindow || 0) >= 0,
-        }
-    ))
-
     function getActionCoverStartTime(actionId) {
-        const map = useNewCompiler.value ? newActionCoverStartMap.value : legacyActionCoverStartMap.value
-        const value = map.get(actionId)
+        const value = newActionCoverStartMap.value.get(actionId)
         return Number.isFinite(value) ? value : null
     }
 
     const nodeRects = computed(() => {
-        return useNewCompiler.value ? newNodeRects.value : legacyNodeRects.value;
+        return newNodeRects.value;
     });
 
     const newNodeRects = computed(() => {
@@ -3191,7 +3180,9 @@ export const useTimelineStore = defineStore('timeline', () => {
             getEnd: (action) => (Number(action.realStartTime) || 0) + (Number(action.realDuration) || 0),
         })
 
-        compiledTimeline.value.actions.forEach(resAction => {
+        const actions = compiledTimeline.value?.actions || []
+
+        actions.forEach(resAction => {
             const left = timeToPx(resAction.realStartTime)
             const visibleEnd = visibleEndMap.get(resAction.id) ?? ((Number(resAction.realStartTime) || 0) + (Number(resAction.realDuration) || 0))
             const width = timeToPx(visibleEnd) - timeToPx(resAction.realStartTime)
@@ -3256,96 +3247,8 @@ export const useTimelineStore = defineStore('timeline', () => {
         return rects
     });
 
-    const legacyNodeRects = computed(() => {
-        const rects = {}
-        const ACTION_BORDER = 2
-        const LINE_GAP = 6
-        const LINE_HEIGHT = 2
-        const visibleEndMap = buildVisibleEndMap(
-            tracks.value.flatMap((track, trackIndex) => (track?.actions || []).map(action => ({ action, trackIndex }))),
-            {
-                getId: (entry) => entry.action.instanceId,
-                getTrackIndex: (entry) => entry.trackIndex,
-                getStart: (entry) => entry.action.startTime,
-                getEnd: (entry) => getShiftedEndTime(entry.action.startTime, entry.action.duration, entry.action.instanceId),
-                isVisible: (entry) => (entry.action?.triggerWindow || 0) >= 0,
-            }
-        )
-
-        actionMap.value.forEach(action => {
-            const end = visibleEndMap.get(action.id) ?? getShiftedEndTime(action.node.startTime, action.node.duration, action.id)
-            const start = action.node.startTime || 0
-            const left = timeToPx(start)
-            const width = timeToPx(end) - timeToPx(start)
-            const finalWidth = width < 2 ? 2 : width
-            const trackRect = trackLaneRects.value[action.trackIndex]
-
-            let y = 0
-            if (trackRect) {
-                y = trackRect.top
-            }
-
-            const rect = {
-                left,
-                width: finalWidth,
-                right: left + finalWidth,
-                height: trackRect?.height ?? 0,
-                top: y - timelineRect.value.top,
-            }
-
-            // 计算触发窗口布局
-            const rawTw = action.node.triggerWindow || 0
-            const snappedWindow = Math.round(Math.abs(rawTw) * 10) / 10
-            let triggerWindowLayout = null
-
-            // 相对动作底部的位移
-            const barYRelative = ACTION_BORDER + LINE_GAP - LINE_HEIGHT / 2
-            const leftEdge = -ACTION_BORDER
-            const rightEdge = leftEdge + finalWidth + ACTION_BORDER
-
-            // 相对时间轴的位移
-            // rect.top 包含一个 ACTION_BORDER，所以这里要减去
-            const barY = rect.top + rect.height + barYRelative - ACTION_BORDER
-
-            if (snappedWindow > 0) {
-                const twStart = Math.max(0, start - snappedWindow)
-                const twWidth = timeToPx(start) - timeToPx(twStart)
-
-                const triggerBarRight = rect.left + leftEdge
-                const triggerBarLeft = triggerBarRight - twWidth
-
-                triggerWindowLayout = {
-                    rect: {
-                        left: triggerBarLeft,
-                        right: triggerBarRight,
-                        top: barY,
-                        height: LINE_HEIGHT,
-                        width: twWidth
-                    },
-                    localTransform: `translate(${leftEdge - twWidth}px, ${barYRelative}px)`,
-                    hasWindow: true
-                }
-            } else {
-                triggerWindowLayout = { hasWindow: false }
-            }
-
-            rects[action.id] = {
-                rect,
-                bar: {
-                    top: barY,
-                    relativeY: barYRelative,
-                    leftEdge,
-                    rightEdge
-                },
-                triggerWindow: triggerWindowLayout
-            }
-        })
-
-        return rects
-    })
-
     const effectLayouts = computed(() => {
-        return useNewCompiler.value ? newEffectLayouts.value : legacyEffectLayouts.value;
+        return newEffectLayouts.value;
     });
 
     const newEffectLayouts = computed(() => {
@@ -3355,7 +3258,9 @@ export const useTimelineStore = defineStore('timeline', () => {
         const VERTICAL_GAP = 3
         const ACTION_BORDER = 2
 
-        compiledTimeline.value.actions.forEach(resAction => {
+        const actions = compiledTimeline.value?.actions || []
+
+        actions.forEach(resAction => {
             const actionRect = nodeRects.value[resAction.id]?.rect
             if (!actionRect) return
 
@@ -3419,127 +3324,6 @@ export const useTimelineStore = defineStore('timeline', () => {
 
         return layoutMap;
     });
-
-    const legacyEffectLayouts = computed(() => {
-        const layoutMap = new Map()
-        const consumptionMap = new Map()
-
-        connections.value.forEach(conn => {
-            if (conn.isConsumption) {
-                const fromEffectId = conn.fromEffectId || (conn.fromNodeType === 'effect' ? conn.fromNodeId : null)
-                if (fromEffectId) {
-                    consumptionMap.set(fromEffectId, conn)
-                }
-            }
-        })
-
-        const ICON_SIZE = 20
-        const BAR_MARGIN = 2
-        const VERTICAL_GAP = 3
-        const ACTION_BORDER = 2
-
-        actionMap.value.forEach(action => {
-            const actionRect = nodeRects.value[action.id]?.rect
-
-            if (!actionRect) return
-
-            if (action.node.physicalAnomaly && action.node.physicalAnomaly.length > 0) {
-                const rows = Array.isArray(action.node.physicalAnomaly[0])
-                    ? action.node.physicalAnomaly
-                    : [action.node.physicalAnomaly];
-
-                let globalFlatIndex = 0
-
-                rows.forEach((row, rowIndex) => {
-                    row.forEach((effect, colIndex) => {
-                        const effectId = ensureEffectId(effect);
-                        const myEffectIndex = globalFlatIndex++;
-
-                        const originalOffset = Number(effect.offset) || 0;
-
-                        // 计算图标的起始现实位置
-                        const shiftedStartTimestamp = getShiftedEndTime(action.node.startTime, originalOffset, action.id);
-                        const effectLeft = timeToPx(shiftedStartTimestamp);
-
-                        // 相对动作的位置
-                        const relativeX = effectLeft - actionRect.left
-                        const relativeY = (rowIndex * (VERTICAL_GAP + ICON_SIZE)) + VERTICAL_GAP + ACTION_BORDER;
-                        const localTransform = `translate(${relativeX}px, ${-relativeY}px)`
-
-                        // 相对时间轴的位置
-                        const absoluteTop = actionRect.top - relativeY - ICON_SIZE + ACTION_BORDER;
-                        const absoluteLeft = effectLeft + 1
-
-                        const iconRect = {
-                            left: absoluteLeft,
-                            width: ICON_SIZE,
-                            right: absoluteLeft + ICON_SIZE,
-                            height: ICON_SIZE,
-                            top: absoluteTop
-                        };
-
-                        // 计算 Buff 的偏移后总时长
-                        let finalDuration = getShiftedEndTime(shiftedStartTimestamp, effect.duration, action.id) - shiftedStartTimestamp;
-                        let isConsumed = false
-
-                        // 连线消耗逻辑
-                        let conn = consumptionMap.get(effectId) || consumptionMap.get(`${action.id}_${myEffectIndex}`);
-
-                        if (conn && conn.isConsumption) {
-                            const targetTrack = tracks.value.find(t => t.actions.some(a => a.instanceId === conn.to));
-                            const targetAction = targetTrack?.actions.find(a => a.instanceId === conn.to);
-                            if (targetAction) {
-                                const consumptionTime = targetAction.startTime - (conn.consumptionOffset || 0);
-                                const cutDuration = consumptionTime - shiftedStartTimestamp;
-                                const snappedCutDuration = snapMs(cutDuration);
-                                if (snappedCutDuration >= 0) {
-                                    finalDuration = Math.min(finalDuration, snappedCutDuration);
-                                    isConsumed = true
-                                }
-                            }
-                        }
-
-                        let finalBarWidth = finalDuration > 0 ? (timeToPx(shiftedStartTimestamp + finalDuration) - timeToPx(shiftedStartTimestamp)) : 0;
-                        if (finalBarWidth > 0) {
-                            finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE - BAR_MARGIN)
-                        }
-
-
-                        layoutMap.set(effectId, {
-                            rect: iconRect,
-                            startTime: shiftedStartTimestamp,
-                            localTransform,
-                            barData: {
-                                width: finalBarWidth,
-                                isConsumed,
-                                displayDuration: finalDuration,
-                                extensionAmount: snapMs(finalDuration - effect.duration)
-                            },
-                            data: effect,
-                            actionId: action.id,
-                            flatIndex: myEffectIndex
-                        })
-
-                        if (isConsumed) {
-                            const barLeft = absoluteLeft + ICON_SIZE + BAR_MARGIN;
-                            const barRight = barLeft + finalBarWidth;
-
-                            // 时间条末端位置
-                            const transferRect = {
-                                left: barRight,
-                                width: 0,
-                                right: barRight,
-                                height: ICON_SIZE,
-                                top: absoluteTop
-                            };
-                            layoutMap.set(`${effectId}_transfer`, { rect: transferRect })
-                        }
-                    })
-                })
-            }
-        })
-        return layoutMap
-    })
 
     const statusNodeRects = computed(() => {
         const map = new Map()
@@ -3680,7 +3464,7 @@ export const useTimelineStore = defineStore('timeline', () => {
 
 
     // ===================================================================================
-    // 右键菜单状态
+    // Context menu state
     // ===================================================================================
     const contextMenu = ref({
         visible: false,
@@ -3706,7 +3490,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 动作属性切换 (锁定/静音/改色)
+    // Action property toggles (lock, disable, color)
     // ===================================================================================
 
     function toggleActionLock(instanceId) {
@@ -3734,14 +3518,8 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 监控数据计算 (Monitor Data)
+    // Monitor data
     // ===================================================================================
-    const useNewCompiler = ref(false);
-
-    function toggleNewCompiler() {
-        useNewCompiler.value = !useNewCompiler.value;
-    }
-
     const compiledScenario = computed(() => {
         const currentScenario = scenarioList.value.find(s => s.id === activeScenarioId.value);
         if (!currentScenario) return null;
@@ -3757,7 +3535,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                 ...currentScenario.data,
                 tracks: compiledTracks
             }
-            , { systemConstants: systemConstants.value });
+            , { systemConstants: { ...systemConstants.value, prepDuration: prepDuration.value } });
         return { timeline, actors, teamConfig, enemyConfig };
     });
 
@@ -3775,9 +3553,23 @@ export const useTimelineStore = defineStore('timeline', () => {
         return simulate(timeline, teamConfig, enemyConfig, actors);
     });
 
+    const simLog = computed(() => {
+        return simulation.value?.simLog || []
+    })
+
+    const simLogRevision = computed(() => {
+        return simLog.value.length
+    })
+
     const spSeries = computed(() => {
         if (!simulation.value) return [];
-        return projectSpSeries(simulation.value.simLog, simulation.value.state.getInitialSnapshot());
+        const prep = Math.max(0, Number(prepDuration.value) || 0)
+        const initialSnapshot = simulation.value.state.getInitialSnapshot()
+        const baseLogs = simulation.value.simLog || []
+        const logsWithPrep = prep > 0
+            ? [{ type: 'SP_REGEN_PAUSE', time: 0, payload: { sourceId: 'prep', duration: prep, sp: initialSnapshot.team.sp } }, ...baseLogs]
+            : baseLogs
+        return projectSpSeries(logsWithPrep, initialSnapshot, viewDuration.value);
     });
 
     const staggerSeries = computed(() => {
@@ -3785,59 +3577,10 @@ export const useTimelineStore = defineStore('timeline', () => {
         return projectStaggerSeries(simulation.value.simLog, simulation.value.state.getInitialSnapshot(), compiledScenario.value.enemyConfig);
     });
 
-    const timeContext = computed(() => compiledTimeline.value.timeContext);
-
-    const legacyGlobalExtensions = computed(() => {
-        const sources = [];
-        tracks.value.forEach(track => {
-            track.actions.forEach(action => {
-                if (action.isDisabled || (action.triggerWindow || 0) < 0) return;
-                if (action.type === 'link' || action.type === 'ultimate') {
-                    sources.push({
-                        logicalTime: action.logicalStartTime ?? action.startTime,
-                        startTime: action.startTime,
-                        type: action.type,
-                        instanceId: action.instanceId,
-                        animationTime: Number(action.animationTime) || 1.5
-                    });
-                }
-            });
-        });
-        sources.sort((a, b) => a.logicalTime - b.logicalTime);
-
-        const extensions = [];
-        let cumulativeTime = 0;
-        for (let i = 0; i < sources.length; i++) {
-            const current = sources[i];
-            const next = sources[i + 1];
-            let amount = 0;
-
-            if (current.type === 'ultimate') {
-                amount = current.animationTime;
-            } else {
-                if (next) {
-                    const gap = next.logicalTime - current.logicalTime;
-                    amount = Math.min(0.5, Math.max(0.1, snapTimeToFrame(gap)));
-                } else {
-                    amount = 0.5;
-                }
-            }
-            const gameTime = current.startTime - cumulativeTime;
-            extensions.push({
-                time: current.startTime,
-                gameTime: gameTime,
-                amount: amount,
-                sourceId: current.instanceId,
-                logicalTime: current.logicalTime,
-                cumulativeFreezeTime: cumulativeTime
-            });
-            cumulativeTime += amount;
-        }
-        return extensions;
-    });
+    const timeContext = computed(() => compiledTimeline.value?.timeContext || null);
 
     const globalExtensions = computed(() => {
-        return useNewCompiler.value ? compiledTimeline.value.timeExtensions : legacyGlobalExtensions.value;
+        return compiledTimeline.value?.timeExtensions || [];
     });
 
     function refreshAllActionShifts(excludeIds = []) {
@@ -3897,25 +3640,9 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function getShiftedEndTime(startTime, duration, excludeActionId = null) {
-        if (useNewCompiler.value) {
-            return timeContext.value.getShiftedEndTime(startTime, duration, excludeActionId);
-        }
-
-        let currentTimeLimit = startTime + duration;
-        let processedExtensions = new Set();
-        let changed = true;
-        while (changed) {
-            changed = false;
-            globalExtensions.value.forEach(ext => {
-                if (ext.sourceId !== excludeActionId && !processedExtensions.has(ext.sourceId) &&
-                    ext.time >= startTime && ext.time < currentTimeLimit) {
-                    currentTimeLimit += ext.amount;
-                    processedExtensions.add(ext.sourceId);
-                    changed = true;
-                }
-            });
-        }
-        return currentTimeLimit;
+        return timeContext.value
+            ? timeContext.value.getShiftedEndTime(startTime, duration, excludeActionId)
+            : startTime + duration;
     }
 
     const ultimateEnhancementMetricsMap = computed(() => {
@@ -3974,50 +3701,11 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function toGameTime(realTimeS) {
-        if (useNewCompiler.value) {
-            return timeContext.value.toGameTime(realTimeS);
-        }
-
-        const extensions = globalExtensions.value;
-
-        for (const ext of extensions) {
-            const freezeRealStart = ext.gameTime + ext.cumulativeFreezeTime;
-
-            const freezeRealEnd = freezeRealStart + ext.amount;
-
-            if (realTimeS >= freezeRealStart && realTimeS < freezeRealEnd) {
-                return ext.gameTime;
-            }
-
-            if (realTimeS < freezeRealStart) {
-                return realTimeS - ext.cumulativeFreezeTime;
-            }
-        }
-
-        const last = extensions[extensions.length - 1];
-        if (last) {
-            const totalOffset = last.cumulativeFreezeTime + last.amount;
-            return realTimeS - totalOffset;
-        }
-
-        return realTimeS;
+        return timeContext.value ? timeContext.value.toGameTime(realTimeS) : realTimeS;
     }
 
     function toRealTime(gameTimeS) {
-        if (useNewCompiler.value) {
-            return timeContext.value.toRealTime(gameTimeS);
-        }
-
-        const extensions = globalExtensions.value;
-        const breakPoint = extensions.toReversed().find(e => e.gameTime <= gameTimeS);
-
-        if (!breakPoint) return gameTimeS;
-
-        if (gameTimeS === breakPoint.gameTime) {
-            return gameTimeS + breakPoint.cumulativeFreezeTime;
-        }
-
-        return gameTimeS + breakPoint.cumulativeFreezeTime + breakPoint.amount;
+        return timeContext.value ? timeContext.value.toRealTime(gameTimeS) : gameTimeS;
     }
 
     function pushSubsequentActions(triggerTime, amount, excludeIds = []) {
@@ -4053,250 +3741,6 @@ export const useTimelineStore = defineStore('timeline', () => {
             });
             track.actions.sort((a, b) => a.startTime - b.startTime);
         });
-    }
-
-    function calculateGlobalStaggerData() {
-        const {
-            maxStagger,
-            staggerNodeCount,
-            staggerNodeDuration,
-            staggerBreakDuration
-        } = systemConstants.value;
-
-        const ORIGINIUM_ARTS_FACTOR = 0.005;
-
-        const events = [];
-        tracks.value.forEach(track => {
-            if (!track.actions) return;
-            const originiumArtsPower = Number(track.originiumArtsPower) || 0;
-            const knockBonusMultiplier = 1 + originiumArtsPower * ORIGINIUM_ARTS_FACTOR;
-            track.actions.forEach(action => {
-                if (action.isDisabled || (action.triggerWindow || 0) < 0) return;
-
-                // 收集所有失衡值变动事件，并进行时间对齐
-                const effectTypeMap = new Map();
-                if (action.physicalAnomaly && action.physicalAnomaly.length > 0) {
-                    const rows = Array.isArray(action.physicalAnomaly[0])
-                        ? action.physicalAnomaly
-                        : [action.physicalAnomaly];
-                    rows.forEach(row => {
-                        row.forEach(effect => {
-                            const id = ensureEffectId(effect);
-                            effectTypeMap.set(id, effect.type);
-                        })
-                    })
-                }
-
-                if (action.damageTicks) {
-                    action.damageTicks.forEach(tick => {
-                        const staggerVal = Number(tick.stagger) || 0;
-                        if (staggerVal > 0) {
-                            const boundEffects = Array.isArray(tick.boundEffects) ? tick.boundEffects : [];
-                            const hasKnockBinding = boundEffects.some(id => {
-                                const type = effectTypeMap.get(id);
-                                return type === 'knockup' || type === 'knockdown';
-                            });
-                            const bonusMultiplier = hasKnockBinding ? knockBonusMultiplier : 1;
-                            const adjustedStagger = snapMs(staggerVal * bonusMultiplier);
-
-                            const actualTickTime = getShiftedEndTime(action.startTime, Number(tick.offset) || 0, action.instanceId);
-                            events.push({ time: snapTimeToFrame(actualTickTime), change: adjustedStagger });
-                        }
-                    });
-                }
-            });
-        });
-
-        // 按物理时间排序
-        events.sort((a, b) => a.time - b.time);
-
-        const points = [{ time: 0, val: 0 }];
-        const lockSegments = [];
-        const nodeSegments = [];
-        let currentVal = 0;
-        let currentTime = 0;
-        let lockedUntil = -1;
-        const nodeStep = maxStagger / (staggerNodeCount + 1);
-        const hasNodes = staggerNodeCount > 0;
-
-        const advanceTime = (targetTime) => {
-            const t = snapTimeToFrame(targetTime);
-            if (t > currentTime) {
-                points.push({ time: t, val: currentVal });
-                currentTime = t;
-            }
-        };
-
-        events.forEach(ev => {
-            advanceTime(ev.time);
-
-            if (currentTime >= lockedUntil - 0.0001) {
-                const prevVal = currentVal;
-                currentVal += ev.change;
-
-                // 触发失衡
-                if (currentVal >= maxStagger - 0.0001) {
-                    currentVal = 0;
-                    // 击破时长受全局时间延长逻辑（时停）影响
-                    const breakEnd = getShiftedEndTime(currentTime, staggerBreakDuration);
-                    lockedUntil = snapTimeToFrame(breakEnd);
-
-                    lockSegments.push({ start: currentTime, end: lockedUntil });
-                    points.push({ time: currentTime, val: 0 });
-                }
-                // 触发节点
-                else if (hasNodes) {
-                    const prevNodeIdx = Math.floor(prevVal / nodeStep + 0.0001);
-                    const currNodeIdx = Math.floor(currentVal / nodeStep + 0.0001);
-
-                    if (currNodeIdx > prevNodeIdx) {
-                        // 节点锁定时间同样受延长逻辑影响
-                        const nodeEnd = getShiftedEndTime(currentTime, staggerNodeDuration);
-                        const finalNodeEnd = snapTimeToFrame(nodeEnd);
-
-                        nodeSegments.push({
-                            start: currentTime,
-                            end: finalNodeEnd,
-                            thresholdVal: currNodeIdx * nodeStep
-                        });
-                    }
-                }
-            }
-            points.push({ time: currentTime, val: currentVal });
-        });
-
-        if (currentTime < viewDuration.value) advanceTime(viewDuration.value);
-
-        return { points, lockSegments, nodeSegments, nodeStep };
-    }
-
-    function calculateGlobalSpData() {
-        const { maxSp, spRegenRate, initialSp, executionRecovery } = systemConstants.value;
-        const prep = Math.max(MIN_PREP_DURATION, Number(prepDuration.value) || 0)
-        const endTime = viewDuration.value
-
-        const instantEvents = [];
-        const pauseWindows = [];
-
-        tracks.value.forEach(track => {
-            track.actions.forEach(action => {
-                if (action.isDisabled || (action.triggerWindow || 0) < 0) return;
-
-                if (action.type === 'skill') {
-                    pauseWindows.push({
-                        start: snapTimeToFrame(action.startTime),
-                        end: snapTimeToFrame(action.startTime + 0.5)
-                    });
-                }
-
-                if (action.spCost > 0) {
-                    instantEvents.push({
-                        time: snapTimeToFrame(action.startTime),
-                        change: -Number(action.spCost)
-                    });
-                }
-
-                if (action.spGain > 0) {
-                    const actualEndTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
-                    instantEvents.push({ time: snapTimeToFrame(actualEndTime), change: Number(action.spGain) });
-                }
-
-                if (action.type === 'execution') {
-                    const actualEndTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
-                    instantEvents.push({
-                        time: snapTimeToFrame(actualEndTime),
-                        change: Number(executionRecovery) || 0
-                    });
-                }
-
-                if (action.damageTicks) {
-                    action.damageTicks.forEach(tick => {
-                        if (tick.sp > 0) {
-                            const actualTickTime = getShiftedEndTime(action.startTime, tick.offset, action.instanceId);
-                            instantEvents.push({ time: snapTimeToFrame(actualTickTime), change: Number(tick.sp) });
-                        }
-                    });
-                }
-            });
-        });
-
-        // 战前准备：冻结全部 SP 变化
-        if (prep > 0) {
-            pauseWindows.push({ start: 0, end: snapTimeToFrame(prep) })
-        }
-
-        globalExtensions.value.forEach(ext => {
-            pauseWindows.push({
-                start: snapTimeToFrame(ext.time),
-                end: snapTimeToFrame(ext.time + ext.amount)
-            });
-        });
-
-        const criticalTimes = new Set();
-        criticalTimes.add(0);
-        criticalTimes.add(snapTimeToFrame(endTime));
-        if (prep > 0) criticalTimes.add(snapTimeToFrame(prep))
-
-        instantEvents
-            .filter(e => e.time >= prep - 0.0001)
-            .forEach(e => criticalTimes.add(e.time));
-        pauseWindows.forEach(w => {
-            criticalTimes.add(w.start);
-            criticalTimes.add(w.end);
-        });
-
-        const sortedTimes = Array.from(criticalTimes).sort((a, b) => a - b);
-
-        const isPausedInterval = (t1, t2) => {
-            const mid = (t1 + t2) / 2;
-            return pauseWindows.some(w => mid >= w.start && mid < w.end);
-        };
-
-        const points = [];
-        const parsedInit = Number(initialSp);
-        let currentSp = isNaN(parsedInit) ? 200 : parsedInit;
-        let prevTime = 0;
-
-        for (let i = 0; i < sortedTimes.length; i++) {
-            const now = sortedTimes[i];
-            const dt = now - prevTime;
-
-            if (dt > 0) {
-                if (!isPausedInterval(prevTime, now)) {
-                    if (currentSp < maxSp) {
-                        const needed = maxSp - currentSp;
-                        const potentialGain = dt * spRegenRate;
-
-                        if (potentialGain > needed) {
-                            const timeToCap = needed / spRegenRate;
-                            points.push({ time: snapTimeToFrame(prevTime + timeToCap), sp: maxSp });
-                            currentSp = maxSp;
-                        } else {
-                            currentSp += potentialGain;
-                        }
-                    }
-                }
-            }
-
-            points.push({ time: now, sp: currentSp });
-
-            if (now < prep - 0.0001) {
-                prevTime = now
-                continue
-            }
-
-            const eventsNow = instantEvents.filter(e => e.time === now && e.time >= prep - 0.0001);
-            if (eventsNow.length > 0) {
-                eventsNow.forEach(e => {
-                    currentSp += e.change;
-                });
-                if (currentSp > maxSp) currentSp = maxSp;
-                points.push({ time: now, sp: currentSp });
-            }
-            prevTime = now;
-        }
-
-        return points;
     }
 
     function resolveGaugeMax(trackId, track, charInfo) {
@@ -4346,7 +3790,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         const canAcceptTeamGauge = (charInfo.accept_team_gauge !== false);
         const GAUGE_MAX = resolveGaugeMax(trackId, track, charInfo);
 
-        // 识别大招封禁区间（大招动画及强化期间不涨能）
+        // Add a prep-time pause event so projected SP matches the frozen opening window.
         const blockWindows = [];
         if (track.actions) {
             track.actions.forEach(action => {
@@ -4390,13 +3834,13 @@ export const useTimelineStore = defineStore('timeline', () => {
             sourceTrack.actions.forEach(action => {
                 if (action.isDisabled || (action.triggerWindow || 0) < 0) return;
 
-                // 自身动作能量变动
+                // Apply gauge changes caused by this track's own actions.
                 if (sourceTrack.id === trackId) {
-                    // 消耗：在开始时刻发生
+                    // Costs are applied at action start.
                     if (action.gaugeCost > 0) {
                         events.push({ time: snapTimeToFrame(action.startTime), change: -Number(action.gaugeCost) });
                     }
-                    // 自身回能：在结束时刻触发
+                    // Self gauge gain is applied when the action ends.
                     if (action.gaugeGain > 0) {
                         const triggerTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
                         if (!isBlocked(triggerTime, action.instanceId)) {
@@ -4404,7 +3848,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                         }
                     }
                 }
-                // 队友动作产生的全队回能
+                // Team gauge gain from allies applies to receivers that accept it.
                 else if (action.teamGaugeGain > 0 && canAcceptTeamGauge) {
                     const triggerTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
                     if (!isBlocked(triggerTime, action.instanceId)) {
@@ -4414,14 +3858,14 @@ export const useTimelineStore = defineStore('timeline', () => {
             });
         });
 
-        // 排序所有变动事件
+        // Sort all gauge change events.
         events.sort((a, b) => a.time - b.time);
 
         const initialGauge = Number(track.initialGauge) || 0;
         let currentGauge = initialGauge > GAUGE_MAX ? GAUGE_MAX : initialGauge;
         const points = [{ time: 0, val: currentGauge, ratio: currentGauge / GAUGE_MAX }];
 
-        // 模拟计算能量曲线
+        // Simulate the resulting gauge curve.
         events.forEach(ev => {
             points.push({ time: ev.time, val: currentGauge, ratio: currentGauge / GAUGE_MAX });
             currentGauge += ev.change;
@@ -4496,7 +3940,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 持久化与数据加载 (Persistence)
+    // Persistence and data loading
     // ===================================================================================
 
     const STORAGE_KEY = 'endaxis_autosave'
@@ -4596,7 +4040,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         systemConstants.value = { ...DEFAULT_SYSTEM_CONSTANTS };
 
         activeEnemyId.value = 'custom';
-        // 重置方案
+        // Reset scenarios to the default single-scenario state.
         scenarioList.value = [{ id: 'default_sc', name: tr('timeline.scenario.defaultName', { index: 1 }), data: null }];
         activeScenarioId.value = 'default_sc';
 
@@ -4820,13 +4264,13 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     return {
-        MAX_SCENARIOS, toTimelineSpace, toViewportSpace, toGameTime, toRealTime, toggleNewCompiler,
+        MAX_SCENARIOS, toTimelineSpace, toViewportSpace, toGameTime, toRealTime,
         systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollTop, timelineShift, timelineRect, trackLaneRects, nodeRects, draggingSkillData,
         selectedActionId, selectedLibrarySkillId, selectedLibrarySource, selectedWeaponStatusId, multiSelectedIds, clipboard, isCapturing, setIsCapturing, showCursorGuide, isBoxSelectMode, cursorPosTimeline, cursorCurrentTime, cursorPosition, snapStep,
         selectedAnomalyId, setSelectedAnomalyId, updateTrackGaugeEfficiency,
         teamTracksInfo, activeSkillLibrary, activeWeaponSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, exportShareString, importShareString, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction, updateWeaponStatus,
-        addSkillToTrack, setDraggingSkill, setTimelineShift, setScrollTop, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGlobalSpData, calculateGaugeData, getTrackGaugeMax, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge, updateTrackOriginiumArtsPower, updateTrackLinkCdReduction, updateTrackWeapon,
+        addSkillToTrack, setDraggingSkill, setTimelineShift, setScrollTop, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGaugeData, getTrackGaugeMax, updateTrackInitialGauge, updateTrackMaxGauge, updateTrackOriginiumArtsPower, updateTrackLinkCdReduction, updateTrackWeapon,
         updateTrackWeaponTier, syncAllWeaponModifiers, getModifierLabel,
         removeConnection, updateConnection, updateConnectionPort, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorPosition, toggleSnapStep, nudgeSelection,
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
@@ -4850,7 +4294,9 @@ export const useTimelineStore = defineStore('timeline', () => {
         prepDuration, prepExpanded, viewDuration, prepZoneWidthPx, totalTimelineWidthPx,
         timeToPx, pxToTime, formatAxisTimeLabel, togglePrepExpanded, setPrepDuration,
         getActionCoverStartTime,
-        useNewCompiler, compiledTimeline, spSeries, staggerSeries,
-        gaugeSeriesByTrackId
+        compiledTimeline, spSeries, staggerSeries,
+        gaugeSeriesByTrackId,
+        simLog,
+        simLogRevision,
     }
 })

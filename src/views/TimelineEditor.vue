@@ -12,6 +12,7 @@ import TimelineGrid from '../components/TimelineGrid.vue'
 import ActionLibrary from '../components/ActionLibrary.vue'
 import PropertiesPanel from '../components/PropertiesPanel.vue'
 import ResourceMonitor from '../components/ResourceMonitor.vue'
+import SimLogPanel from '../components/SimLogPanel.vue'
 
 import { addMetadataToPng, readMetadataFromPng } from '../utils/pngUtils.js'
 
@@ -23,12 +24,12 @@ const TIMELINE_LAYOUT_KEY = 'endaxis:timeline-workbench-layout:v1'
 const ACTIVITY_BAR_WIDTH = 48
 const PANEL_MAX_WIDTH = 480
 const LEFT_PANEL_MIN_WIDTH = 200
-const RIGHT_PANEL_MIN_WIDTH = 240
+const RIGHT_PANEL_MIN_WIDTH = 260
 const BOTTOM_PANEL_MIN_HEIGHT = 220
 const TIMELINE_MAIN_MIN_WIDTH = 540
 const TIMELINE_MAIN_MIN_HEIGHT = 600
 const DEFAULT_LEFT_PANEL_WIDTH = 200
-const DEFAULT_RIGHT_PANEL_WIDTH = 240
+const DEFAULT_RIGHT_PANEL_WIDTH = 260
 const DEFAULT_BOTTOM_PANEL_HEIGHT = 220
 const watermarkEl = ref(null)
 const watermarkSubText = ref('Created by Endaxis')
@@ -41,6 +42,7 @@ const isLeftPanelCollapsed = ref(false)
 const isRightPanelCollapsed = ref(false)
 const isBottomPanelCollapsed = ref(false)
 const activeWorkbenchDrag = ref(null)
+const rightPanelTool = ref('inspector') // 'inspector' | 'battleLog'
 
 let workbenchDragState = null
 
@@ -64,6 +66,7 @@ function persistWorkbenchLayout() {
     isLeftPanelCollapsed: isLeftPanelCollapsed.value,
     isRightPanelCollapsed: isRightPanelCollapsed.value,
     isBottomPanelCollapsed: isBottomPanelCollapsed.value,
+    rightPanelTool: rightPanelTool.value,
   }))
 }
 
@@ -88,6 +91,7 @@ function restoreWorkbenchLayout() {
     isLeftPanelCollapsed.value = parsed.isLeftPanelCollapsed === true
     isRightPanelCollapsed.value = parsed.isRightPanelCollapsed === true
     isBottomPanelCollapsed.value = parsed.isBottomPanelCollapsed === true
+    rightPanelTool.value = (parsed.rightPanelTool === 'battleLog') ? 'battleLog' : 'inspector'
   } catch (error) {
     console.error(error)
   }
@@ -101,6 +105,7 @@ function resetWorkbenchLayout(target = 'all') {
   if (target === 'all' || target === 'right') {
     rightPanelWidth.value = DEFAULT_RIGHT_PANEL_WIDTH
     isRightPanelCollapsed.value = false
+    rightPanelTool.value = 'inspector'
   }
   if (target === 'all' || target === 'bottom') {
     bottomPanelHeight.value = DEFAULT_BOTTOM_PANEL_HEIGHT
@@ -117,6 +122,26 @@ function toggleWorkbenchPanel(target) {
   } else if (target === 'bottom') {
     isBottomPanelCollapsed.value = !isBottomPanelCollapsed.value
   }
+  persistWorkbenchLayout()
+}
+
+function toggleRightTool(tool) {
+  const nextTool = tool === 'battleLog' ? 'battleLog' : 'inspector'
+
+  if (isRightPanelCollapsed.value) {
+    rightPanelTool.value = nextTool
+    isRightPanelCollapsed.value = false
+    persistWorkbenchLayout()
+    return
+  }
+
+  if (rightPanelTool.value === nextTool) {
+    isRightPanelCollapsed.value = true
+    persistWorkbenchLayout()
+    return
+  }
+
+  rightPanelTool.value = nextTool
   persistWorkbenchLayout()
 }
 
@@ -191,8 +216,6 @@ const timelineWorkspaceStyle = computed(() => ({
 function toggleActivityPanel(target) {
   if (target === 'library') {
     isLeftPanelCollapsed.value = !isLeftPanelCollapsed.value
-  } else if (target === 'right') {
-    isRightPanelCollapsed.value = !isRightPanelCollapsed.value
   } else if (target === 'bottom') {
     isBottomPanelCollapsed.value = !isBottomPanelCollapsed.value
   }
@@ -895,7 +918,12 @@ onUnmounted(() => {
       <template v-if="!isRightPanelCollapsed">
         <div class="workbench-panel__body properties-sidebar__body">
           <PropertiesPanel
+            v-if="rightPanelTool === 'inspector'"
             :on-reset-panel="() => resetWorkbenchLayout('right')"
+            :on-collapse-panel="() => toggleWorkbenchPanel('right')"
+          />
+          <SimLogPanel
+            v-else
             :on-collapse-panel="() => toggleWorkbenchPanel('right')"
           />
         </div>
@@ -907,13 +935,28 @@ onUnmounted(() => {
         <button
           type="button"
           class="activity-bar__button activity-bar__button--inspector"
-          :class="{ 'is-active': !isRightPanelCollapsed }"
-          @click="toggleActivityPanel('right')"
+          :class="{ 'is-active': !isRightPanelCollapsed && rightPanelTool === 'inspector' }"
+          @click="toggleRightTool('inspector')"
         >
           <svg class="activity-bar__icon activity-bar__icon--inspector" viewBox="0 0 32 32" aria-hidden="true">
             <path d="M8 9.2h16v3H8Zm0 10.8h16v3H8Z" fill="#4f5054"/>
             <path d="M12.2 7.3h3.6v6.8h-3.6Zm4 10.8h3.6v6.8h-3.6Z" fill="#f5c31e"/>
             <path d="M13.9 14.1a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4Zm4.1 10.8a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4Z" fill="#ffffff"/>
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          class="activity-bar__button activity-bar__button--battle-log"
+          :class="{ 'is-active': !isRightPanelCollapsed && rightPanelTool === 'battleLog' }"
+          @click="toggleRightTool('battleLog')"
+        >
+          <svg class="activity-bar__icon activity-bar__icon--battle-log" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M10 6h14a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" fill="#ffffff" opacity="0.92"/>
+            <path d="M12 11h12v2H12zM12 16h12v2H12zM12 21h12v2H12z" fill="#ffffff" opacity="0.82"/>
+            <circle cx="10" cy="12" r="1.2" fill="#ffffff" opacity="0.9"/>
+            <circle cx="10" cy="17" r="1.2" fill="#ffffff" opacity="0.9"/>
+            <circle cx="10" cy="22" r="1.2" fill="#ffffff" opacity="0.9"/>
           </svg>
         </button>
       </div>

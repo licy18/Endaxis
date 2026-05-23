@@ -10,6 +10,7 @@ describe("TeamState", () => {
         spRegenRate: 0,
         skillSpCostDefault: 100,
         linkCdReduction: 0,
+        prepDuration: 0,
       },
       {} as never,
     );

@@ -38,7 +38,76 @@
     },
     "warning": "Warning"
   },
-  "locale": {
+  "battleLog": {
+    "title": "Battle Log",
+    "refresh": "Refresh",
+    "copy": "Copy",
+    "searchPlaceholder": "Search logs...",
+    "typeFilter": "Types",
+    "limit": "Limit",
+    "dirtyHint": "Updated",
+    "types": {
+      "ACTION_START": "Action start",
+      "ACTION_END": "Action end",
+      "DAMAGE_TICK": "Damage",
+      "SP_CHANGE": "SP change",
+      "SP_REGEN_PAUSE": "SP regen pause",
+      "ULTIMATE_CHARGE_CHANGE": "Ultimate Charge",
+      "STAGGER": "Stagger",
+      "EFFECT_START": "Effect start",
+      "EFFECT_END": "Effect end",
+      "REACTION_OCCURRED": "Reaction",
+      "EFFECT_APPLIED": "Effect applied"
+    },
+    "ui": {
+      "filtered": "Entries",
+      "actionGroups": "Skills",
+      "noResults": "No combat events match the current filters.",
+      "selectAll": "Select All",
+      "clear": "Clear",
+      "allResults": "All",
+      "start": "Start",
+      "end": "End",
+      "damageHint": "Damage calculation is not fully wired yet, so values here may still be 0.",
+      "effectApply": "Apply",
+      "effectRemove": "Remove",
+      "orphans": "Unassigned Events",
+      "lines": "Lines",
+      "broken": "Broken",
+      "sections": {
+        "damage": "Damage",
+        "effects": "Afflictions / Reactions",
+        "sp": "SP",
+        "gauge": "Ultimate Charge",
+        "stagger": "Stagger",
+        "other": "Other"
+      }
+    },
+    "summary": {
+      "damage": "Damage",
+      "gauge": "Charge",
+      "stagger": "Stagger"
+    },
+    "effectNames": {
+      "ELEMENT_HEAT": "Heat Attach",
+      "ELEMENT_CRYO": "Cryo Attach",
+      "ELEMENT_ELECTRIC": "Electric Attach",
+      "ELEMENT_NATURE": "Nature Attach",
+      "ELEMENT_COMBUSTION": "Combustion",
+      "ELEMENT_ELECTRIFICATION": "Electrification",
+      "ELEMENT_SOLIDIFICATION": "Solidification",
+      "ELEMENT_CORROSION": "Corrosion",
+      "ELEMENT_HEAT_BURST": "Heat Burst",
+      "ELEMENT_CRYO_BURST": "Cryo Burst",
+      "ELEMENT_ELECTRIC_BURST": "Electric Burst",
+      "ELEMENT_NATURE_BURST": "Nature Burst",
+      "PHYSICAL_VULNERABLE": "Vulnerable",
+      "PHYSICAL_KNOCK_DOWN": "Knock Down",
+      "PHYSICAL_LIFT": "Launch",
+      "PHYSICAL_CRUSH": "Crush",
+      "PHYSICAL_BREACH": "Breach"
+    }
+  },  "locale": {
     "en": "English",
     "ru": "Русский",
     "zhCN": "简体中文"
@@ -220,7 +289,6 @@
     },
     "toolbar": {
       "boxSelect": "Box select (Ctrl+B)",
-      "compilerToggle": "New compiler (Ctrl+G)",
       "connectionTool": "Connection tool (Alt+L)",
       "cursorGuide": "Guide line (Ctrl+G)",
       "snapPrecision": "Snap precision (Alt+S)"
@@ -395,8 +463,8 @@
       "triggerWindowS": "Trigger Window(f)",
       "spCost": "SP Cost",
       "gaugeCost": "Charge Cost",
-      "gaugeGain": "SP Gain",
-      "teamGaugeGain": "Team SP",
+      "gaugeGain": "Extra Self Charge",
+      "teamGaugeGain": "Extra Team Charge",
       "enhancementTimeS": "Enhancement Time (f)",
       "followupDelayS": "Next Delay (f)",
       "comboSegment": "Combo Segment",

@@ -200,6 +200,8 @@ export type SimLogEntry =
       {
         effectSnapshot: EffectSnapshot;
         targetId: string;
+        actorId?: string;
+        actionId?: string;
       }
     >
   | SimLogEntryBase<
@@ -207,6 +209,7 @@ export type SimLogEntry =
       {
         reactionName: string;
         actorId: string;
+        actionId?: string;
       }
     >
   | SimLogEntryBase<
@@ -223,5 +226,7 @@ export type SimLogEntry =
         effectId: string;
         targetId: string;
         type: "consumption" | "expiration";
+        actorId?: string;
+        actionId?: string;
       }
     >;

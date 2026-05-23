@@ -1012,7 +1012,7 @@ function onActionContextMenu(evt, action) {
 // 鼠标与拖拽逻辑
 // ===================================================================================
 
-const cachedSpData = computed(() => store.calculateGlobalSpData())
+const cachedSpData = computed(() => store.spSeries || [])
 const currentSpValue = computed(() => {
   const time = store.cursorCurrentTime
   const points = cachedSpData.value
@@ -1031,7 +1031,7 @@ const currentSpValue = computed(() => {
   return Math.floor(points[points.length - 1].sp)
 })
 
-const cachedStaggerData = computed(() => store.calculateGlobalStaggerData().points)
+const cachedStaggerData = computed(() => store.staggerSeries?.points || [])
 const currentStaggerValue = computed(() => {
   const time = store.cursorCurrentTime
   const points = cachedStaggerData.value
@@ -1898,9 +1898,6 @@ onUnmounted(() => {
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 4h14c3 0 3 8 0 8h-14c-3 0-3 8 0 8h14" /><circle cx="5" cy="4" r="2" fill="currentColor"/><circle cx="19" cy="20" r="2" fill="currentColor"/></svg>
           </button>
 
-          <button class="mini-tool-btn" :class="{ 'is-active': store.useNewCompiler }" @click="store.toggleNewCompiler" :title="t('timelineGrid.toolbar.compilerToggle')">
-            <span class="btn-text">{{ store.useNewCompiler ? t('common.new') : t('common.old') }}</span>
-          </button>
         </div>
         
         <div class="corner-zoom-row">

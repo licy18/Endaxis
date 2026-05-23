@@ -55,7 +55,7 @@ export function simulate(
       },
     });
 
-    if (action.node.gaugeGain > 0 && action.node.type !== "skill") {
+    if (action.node.gaugeGain > 0) {
       engine.enqueue({
         type: "ULTIMATE_CHARGE_CHANGE",
         time: action.realStartTime + action.realDuration,

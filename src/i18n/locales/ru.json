@@ -38,7 +38,76 @@
     },
     "warning": "Предупреждение"
   },
-  "locale": {
+  "battleLog": {
+    "title": "Журнал боя",
+    "refresh": "Обновить",
+    "copy": "Копировать",
+    "searchPlaceholder": "Поиск по журналу...",
+    "typeFilter": "Типы",
+    "limit": "Лимит",
+    "dirtyHint": "Обновлено",
+    "types": {
+      "ACTION_START": "Начало действия",
+      "ACTION_END": "Конец действия",
+      "DAMAGE_TICK": "Урон",
+      "SP_CHANGE": "Изменение SP",
+      "SP_REGEN_PAUSE": "Пауза восстановления SP",
+      "ULTIMATE_CHARGE_CHANGE": "Заряд ульты",
+      "STAGGER": "Пошатывание",
+      "EFFECT_START": "Начало эффекта",
+      "EFFECT_END": "Конец эффекта",
+      "REACTION_OCCURRED": "Реакция",
+      "EFFECT_APPLIED": "Применение эффекта"
+    },
+    "ui": {
+      "filtered": "Записей",
+      "actionGroups": "Навыков",
+      "noResults": "По текущим фильтрам боевые события не найдены.",
+      "selectAll": "Выбрать все",
+      "clear": "Очистить",
+      "allResults": "Все",
+      "start": "Старт",
+      "end": "Конец",
+      "damageHint": "Полный расчет урона еще не подключен, поэтому значения здесь могут быть равны 0.",
+      "effectApply": "Наложение",
+      "effectRemove": "Снятие",
+      "orphans": "Несвязанные события",
+      "lines": "Строк",
+      "broken": "Пробой",
+      "sections": {
+        "damage": "Урон",
+        "effects": "Наложения / Реакции",
+        "sp": "SP",
+        "gauge": "Заряд ульты",
+        "stagger": "Пошатывание",
+        "other": "Прочее"
+      }
+    },
+    "summary": {
+      "damage": "Урон",
+      "gauge": "Заряд",
+      "stagger": "Шат"
+    },
+    "effectNames": {
+      "ELEMENT_HEAT": "Наложение жара",
+      "ELEMENT_CRYO": "Наложение холода",
+      "ELEMENT_ELECTRIC": "Наложение электричества",
+      "ELEMENT_NATURE": "Наложение природы",
+      "ELEMENT_COMBUSTION": "Горение",
+      "ELEMENT_ELECTRIFICATION": "Электрификация",
+      "ELEMENT_SOLIDIFICATION": "Заморозка",
+      "ELEMENT_CORROSION": "Коррозия",
+      "ELEMENT_HEAT_BURST": "Тепловой взрыв",
+      "ELEMENT_CRYO_BURST": "Ледяной взрыв",
+      "ELEMENT_ELECTRIC_BURST": "Электрический взрыв",
+      "ELEMENT_NATURE_BURST": "Природный взрыв",
+      "PHYSICAL_VULNERABLE": "Уязвимость",
+      "PHYSICAL_KNOCK_DOWN": "Поваливание",
+      "PHYSICAL_LIFT": "Подбрасывание",
+      "PHYSICAL_CRUSH": "Сокрушение",
+      "PHYSICAL_BREACH": "Пробой брони"
+    }
+  },  "locale": {
     "en": "English",
     "ru": "Русский",
     "zhCN": "简体中文"
@@ -220,7 +289,6 @@
     },
     "toolbar": {
       "boxSelect": "Рамка (Ctrl+B)",
-      "compilerToggle": "Новый компилятор (Ctrl+G)",
       "connectionTool": "Связи (Alt+L)",
       "cursorGuide": "Направляющие (Ctrl+G)",
       "snapPrecision": "Точность привязки (Alt+S)"
@@ -395,8 +463,8 @@
       "triggerWindowS": "Активация(f)",
       "spCost": "Расход ОН",
       "gaugeCost": "Стоимость заряда",
-      "gaugeGain": "ОН",
-      "teamGaugeGain": "ОН (общ.)",
+      "gaugeGain": "Доп. заряд себе",
+      "teamGaugeGain": "Доп. заряд команде",
       "enhancementTimeS": "Время усиления (f)",
       "followupDelayS": "Задержка до следующей (f)",
       "comboSegment": "Сегмент комбо",

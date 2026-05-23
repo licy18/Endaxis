@@ -20,8 +20,19 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
     }
   }
 
-  advanceTime(dt: number, _currentTime: number) {
-    this.regenSp(dt);
+  advanceTime(dt: number, currentTime: number) {
+    const prepEnd = Number(this.config.prepDuration) || 0;
+    if (prepEnd <= 0) {
+      this.regenSp(dt);
+      return;
+    }
+
+    const startTime = currentTime - dt;
+    const effectiveStart = Math.max(startTime, prepEnd);
+    const effectiveDuration = currentTime - effectiveStart;
+    if (effectiveDuration > 0) {
+      this.regenSp(effectiveDuration);
+    }
   }
 
   snapshot(): TeamSnapshot {

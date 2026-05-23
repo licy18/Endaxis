@@ -13,6 +13,7 @@ export interface ReactionResult {
   cancelIncoming: boolean;
   removeIds: string[];
   spawnEffects: Effect[];
+  overrideIncoming?: Effect;
 }
 
 const PHYSICAL_AFFLICTIONS = [
@@ -83,6 +84,12 @@ function getElementalAffliction(
   return existingElements[0];
 }
 
+function cloneEffectWithStacks(effect: Effect, stacks: number): Effect {
+  const cloned = effect.clone();
+  cloned.currentStacks = Math.max(1, Number(stacks) || 1);
+  return cloned;
+}
+
 export const ReactionRegistry = {
   check(target: EffectManager, incoming: Effect): ReactionResult | null {
     if (hasPhysicalAffliction(incoming.tags)) {
@@ -90,62 +97,69 @@ export const ReactionRegistry = {
 
       assert(vulnerables.length <= 1, "Multiple vulnerable effects found");
 
-      // 物理附着
       if (vulnerables.length === 0) {
         return {
           name: "Physical Reaction",
           cancelIncoming: true,
           removeIds: [],
-          spawnEffects: [Effect.PhysicalVulnerable()],
+          spawnEffects: [
+            cloneEffectWithStacks(
+              Effect.PhysicalVulnerable(),
+              incoming.currentStacks,
+            ),
+          ],
         };
       }
 
-      if (vulnerables.length > 0) {
-        const vulnerableEffectInstance = vulnerables[0]!;
+      const vulnerableEffectInstance = vulnerables[0]!;
+      const consumedStacks = vulnerableEffectInstance.effect.currentStacks;
 
-        // 猛击
-        if (incoming.tags.includes("PHYSICAL_CRUSH")) {
-          // 消耗破防
-          return {
-            name: "Physical Crush",
-            cancelIncoming: false,
-            removeIds: [vulnerableEffectInstance.id],
-            spawnEffects: [], // TODO
-          };
-        }
+      if (incoming.tags.includes("PHYSICAL_CRUSH")) {
+        return {
+          name: "Physical Crush",
+          cancelIncoming: false,
+          removeIds: [vulnerableEffectInstance.id],
+          spawnEffects: [],
+          overrideIncoming: cloneEffectWithStacks(incoming, consumedStacks),
+        };
+      }
 
-        // 碎甲
-        if (incoming.tags.includes("PHYSICAL_BREACH")) {
-          // 消耗破防
-          return {
-            name: "Physical Breach",
-            cancelIncoming: false,
-            removeIds: [vulnerableEffectInstance.id],
-            spawnEffects: [], // TODO
-          };
-        }
+      if (incoming.tags.includes("PHYSICAL_BREACH")) {
+        return {
+          name: "Physical Breach",
+          cancelIncoming: false,
+          removeIds: [vulnerableEffectInstance.id],
+          spawnEffects: [],
+          overrideIncoming: cloneEffectWithStacks(incoming, consumedStacks),
+        };
+      }
 
-        // 击飞
-        if (incoming.tags.includes("PHYSICAL_LIFT")) {
-          // 添加破防层数
-          return {
-            name: "Physical Lift",
-            cancelIncoming: false,
-            removeIds: [],
-            spawnEffects: [Effect.PhysicalVulnerable()],
-          };
-        }
+      if (incoming.tags.includes("PHYSICAL_LIFT")) {
+        return {
+          name: "Physical Lift",
+          cancelIncoming: false,
+          removeIds: [],
+          spawnEffects: [
+            cloneEffectWithStacks(
+              Effect.PhysicalVulnerable(),
+              incoming.currentStacks,
+            ),
+          ],
+        };
+      }
 
-        // 倒地
-        if (incoming.tags.includes("PHYSICAL_KNOCK_DOWN")) {
-          // 添加破防层数
-          return {
-            name: "Physical Knock Down",
-            cancelIncoming: false,
-            removeIds: [],
-            spawnEffects: [Effect.PhysicalVulnerable()],
-          };
-        }
+      if (incoming.tags.includes("PHYSICAL_KNOCK_DOWN")) {
+        return {
+          name: "Physical Knock Down",
+          cancelIncoming: false,
+          removeIds: [],
+          spawnEffects: [
+            cloneEffectWithStacks(
+              Effect.PhysicalVulnerable(),
+              incoming.currentStacks,
+            ),
+          ],
+        };
       }
     }
 
@@ -153,33 +167,34 @@ export const ReactionRegistry = {
       const existingAffliction = getElementalAffliction(target.getAllTags());
       const incomingAffliction = getElementalAffliction(incoming.tags)!;
 
-      // 元素附着
       if (!existingAffliction) {
         return null;
       }
 
       const existingEffect = target.getByTag(existingAffliction)[0]!;
-
       const reaction =
         ELEMENT_REACTION_MATRIX[existingAffliction][incomingAffliction];
 
       if (reaction.includes("BURST")) {
-        // 法术爆发
         return {
           name: `Arts Burst ${existingAffliction.replace("ELEMENT_", "")}`,
           cancelIncoming: false,
           removeIds: [],
           spawnEffects: [AfflictionEffectMap[reaction]],
         };
-      } else {
-        // 法术异常
-        return {
-          name: `Arts Reaction ${existingAffliction.replace("ELEMENT_", "")}`,
-          cancelIncoming: true,
-          removeIds: [existingEffect.id],
-          spawnEffects: [AfflictionEffectMap[reaction]],
-        };
       }
+
+      return {
+        name: `Arts Reaction ${existingAffliction.replace("ELEMENT_", "")}`,
+        cancelIncoming: true,
+        removeIds: [existingEffect.id],
+        spawnEffects: [
+          cloneEffectWithStacks(
+            AfflictionEffectMap[reaction],
+            existingEffect.effect.currentStacks,
+          ),
+        ],
+      };
     }
 
     return null;

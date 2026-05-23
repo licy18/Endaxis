@@ -374,29 +374,16 @@ const connectionSourceActionId = computed(() => {
 
 // 计算判定点的位置样式
 const renderableTicks = computed(() => {
-  if (store.useNewCompiler) {
-    const resolvedAction = store.compiledTimeline.actionMap.get(props.action.instanceId)
-    return resolvedAction?.resolvedDamageTicks.filter(tick => !isCoveredBeforeStart(tick.realTime)).map(tick => {
-        const left = store.timeToPx(tick.realTime) - store.timeToPx(resolvedAction.realStartTime)
-        return {
-            style: { left: `${left}px` },
-            data: tick
-        }
-    })
-  }
-
-  const ticks = props.action.damageTicks || []
-
-  return ticks.map(tick => {
-    const originalOffset = tick.offset || 0
-    const shiftedTimestamp = store.getShiftedEndTime(props.action.startTime, originalOffset, props.action.instanceId)
-    if (isCoveredBeforeStart(shiftedTimestamp)) return null
-    const left = store.timeToPx(shiftedTimestamp) - store.timeToPx(props.action.startTime)
-    return {
-      style: { left: `${left}px` },
-      data: tick
-    }
-  }).filter(item => item !== null)
+  const resolvedAction = store.compiledTimeline?.actionMap.get(props.action.instanceId)
+  return resolvedAction?.resolvedDamageTicks
+    .filter(tick => !isCoveredBeforeStart(tick.realTime))
+    .map(tick => {
+      const left = store.timeToPx(tick.realTime) - store.timeToPx(resolvedAction.realStartTime)
+      return {
+        style: { left: `${left}px` },
+        data: tick
+      }
+    }) || []
 })
 
 const renderableAnomalies = computed(() => {

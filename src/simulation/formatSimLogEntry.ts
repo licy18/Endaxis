@@ -1,58 +1,108 @@
 import type { SimLogEntry } from "@/simulation/events/event.types.ts";
 
-function withPrefix(entry: SimLogEntry, message: string) {
-  return `[${entry.time.toFixed(3)}] [${entry.type}] ${message}`;
+export type FormatSimLogEntryOptions = {
+  formatTime?: (timeSeconds: number) => string;
+};
+
+function formatDefaultTime(timeSeconds: number) {
+  if (!Number.isFinite(timeSeconds)) return "0.000s";
+  return `${timeSeconds.toFixed(3)}s`;
 }
 
-export function formatSimLogEntry(entry: SimLogEntry) {
+function withPrefix(
+  entry: SimLogEntry,
+  message: string,
+  opts?: FormatSimLogEntryOptions,
+) {
+  const timeLabel = (opts?.formatTime || formatDefaultTime)(entry.time);
+  return `[${timeLabel}] [${entry.type}] ${message}`;
+}
+
+export function formatSimLogEntry(entry: SimLogEntry, opts?: FormatSimLogEntryOptions) {
+  if (!entry || !entry.type) return "";
+
   switch (entry.type) {
-    case "ACTION_START":
-      return withPrefix(entry, `action start ${entry.payload.skillId}`);
-    case "ACTION_END":
-      return withPrefix(entry, `action end ${entry.payload.skillId}`);
-    case "DAMAGE_TICK":
+    case "ACTION_START": {
+      const { skillId, actionId, type, spCost } = entry.payload || ({} as any);
+      const extra = spCost != null ? ` cost=${spCost}` : "";
+      return withPrefix(entry, `action start ${skillId} (${type}) id=${actionId}${extra}`, opts);
+    }
+    case "ACTION_END": {
+      const { skillId, actionId, type, spGain, spGainKind } = entry.payload || ({} as any);
+      const gain =
+        spGain != null ? ` gain=${spGain}${spGainKind ? `(${spGainKind})` : ""}` : "";
+      return withPrefix(entry, `action end ${skillId} (${type}) id=${actionId}${gain}`, opts);
+    }
+    case "DAMAGE_TICK": {
+      const { sourceId, targetId, damage, stagger, tickData, actionId } =
+        entry.payload || ({} as any);
+      const spGain = Number(tickData?.sp) ? ` sp+${tickData.sp}` : "";
       return withPrefix(
         entry,
-        `damage ${entry.payload.damage} (stagger ${entry.payload.stagger})`,
+        `dmg ${damage} stg ${stagger}${spGain} ${sourceId} -> ${targetId} id=${actionId}`,
+        opts,
       );
-    case "STAGGER":
+    }
+    case "STAGGER": {
+      const { actorId, actionId, stagger, amount, isBroken } = entry.payload || ({} as any);
+      const tag = isBroken ? " (BROKEN)" : "";
       return withPrefix(
         entry,
-        `${entry.payload.actorId} ${
-          entry.payload.actionId
-        } ${entry.payload.stagger.toFixed(1)} (${entry.payload.amount.toFixed(
-          1,
-        )}) ${entry.payload.isBroken ? "(BROKEN)" : ""}`,
+        `${actorId} stg=${Number(stagger).toFixed(1)} (${Number(amount).toFixed(1)}) id=${actionId}${tag}`,
+        opts,
       );
-    case "SP_CHANGE":
+    }
+    case "SP_CHANGE": {
+      const { sp, change, reason, sourceId, recoverSp, refundSp, debtSp } = entry.payload || ({} as any);
+      const before = Number(sp) - Number(change);
+      const delta = Number(change);
+      const sign = delta > 0 ? "+" : "";
+      const extra =
+        recoverSp != null || refundSp != null || debtSp != null
+          ? ` [rec=${recoverSp ?? 0} ref=${refundSp ?? 0} debt=${debtSp ?? 0}]`
+          : "";
+      return withPrefix(entry, `sp ${before} -> ${sp} (${sign}${delta}) ${reason} id=${sourceId}${extra}`, opts);
+    }
+    case "ULTIMATE_CHARGE_CHANGE": {
+      const { actorId, gauge, maxGauge, change, reason, sourceId } = entry.payload || ({} as any);
+      const sign = Number(change) > 0 ? "+" : "";
       return withPrefix(
         entry,
-        `sp change ${entry.payload.change} -> ${entry.payload.sp} (${entry.payload.reason})`,
+        `${actorId} gauge ${Number(gauge) - Number(change)} -> ${gauge}/${maxGauge} (${sign}${change}) ${reason} id=${sourceId}`,
+        opts,
       );
-    case "ULTIMATE_CHARGE_CHANGE":
-      return withPrefix(
-        entry,
-        `${entry.payload.actorId} gauge change ${entry.payload.change} -> ${entry.payload.gauge} (${entry.payload.reason})`,
-      );
-    case "SP_REGEN_PAUSE":
-      return withPrefix(
-        entry,
-        `sp regen paused for ${entry.payload.duration.toFixed(3)}s`,
-      );
-    case "EFFECT_START":
-      return withPrefix(
-        entry,
-        `effect start ${entry.payload.effectSnapshot.id}`,
-      );
-    case "EFFECT_END":
-      return withPrefix(
-        entry,
-        `${entry.payload.effectId} ${entry.payload.type}`,
-      );
-    case "REACTION_OCCURRED":
-      return withPrefix(
-        entry,
-        `${entry.payload.actorId} ${entry.payload.reactionName}`,
-      );
+    }
+    case "SP_REGEN_PAUSE": {
+      const { duration, sp, sourceId } = entry.payload || ({} as any);
+      return withPrefix(entry, `sp regen pause ${Number(duration).toFixed(3)}s sp=${sp} id=${sourceId}`, opts);
+    }
+    case "EFFECT_START": {
+      const { effectSnapshot, targetId, actorId, actionId } = entry.payload || ({} as any);
+      const id = effectSnapshot?.id;
+      const stacks = effectSnapshot?.currentStacks;
+      const st = stacks != null ? ` x${stacks}` : "";
+      const by = actorId ? ` by=${actorId}` : "";
+      const act = actionId ? ` id=${actionId}` : "";
+      return withPrefix(entry, `effect + ${id}${st} -> ${targetId}${by}${act}`, opts);
+    }
+    case "EFFECT_END": {
+      const { effectId, targetId, type, actorId, actionId } = entry.payload || ({} as any);
+      const by = actorId ? ` by=${actorId}` : "";
+      const act = actionId ? ` id=${actionId}` : "";
+      return withPrefix(entry, `effect - ${effectId} (${type}) -> ${targetId || ""}${by}${act}`, opts);
+    }
+    case "REACTION_OCCURRED": {
+      const { actorId, reactionName, actionId } = entry.payload || ({} as any);
+      const act = actionId ? ` id=${actionId}` : "";
+      return withPrefix(entry, `reaction ${reactionName} by=${actorId}${act}`, opts);
+    }
+    case "EFFECT_APPLIED": {
+      const { name, targetId } = entry.payload || ({} as any);
+      return withPrefix(entry, `effect applied ${name} -> ${targetId}`, opts);
+    }
+    default: {
+      const anyEntry: any = entry;
+      return withPrefix(anyEntry, JSON.stringify(anyEntry.payload ?? {}), opts);
+    }
   }
 }

@@ -24,6 +24,7 @@ export interface TeamConfig {
   spRegenRate: number;
   skillSpCostDefault: number;
   linkCdReduction: number;
+  prepDuration: number;
 }
 
 export interface TeamSnapshot {

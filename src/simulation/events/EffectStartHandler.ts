@@ -6,7 +6,7 @@ import { ReactionRegistry } from "@/simulation/mechanics/reactions";
 
 export class EffectStartHandler implements EventHandler<EffectStartEvent> {
   handle(event: EffectStartEvent, ctx: SimulationContext) {
-    const { effect } = event.payload;
+    let effect = event.payload.effect;
 
     const target =
       event.payload.targetId === "boss"
@@ -24,6 +24,7 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
         payload: {
           reactionName: reaction.name,
           actorId: event.payload.actorId,
+          actionId: event.payload.actionId,
         },
       });
 
@@ -46,9 +47,14 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
             effect: newEff,
             targetId: event.payload.targetId,
             actorId: event.payload.actorId,
+            actionId: event.payload.actionId,
           },
         });
       });
+
+      if (reaction.overrideIncoming) {
+        effect = reaction.overrideIncoming.snapshot();
+      }
 
       if (reaction.cancelIncoming) {
         return;
@@ -63,6 +69,8 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
       payload: {
         effectSnapshot: appliedInstance.effect.snapshot(),
         targetId: event.payload.targetId,
+        actorId: event.payload.actorId,
+        actionId: event.payload.actionId,
       },
     });
 

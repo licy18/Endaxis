@@ -24,21 +24,13 @@ function normalizeTracks(tracks: ScenarioTrack[]): ScenarioTrack[] {
 }
 
 function normalizeAction(action: Action): Action {
-  const nextAction = {
+  return {
     ...action,
     damageTicks: (action.damageTicks || []).map((tick) => ({
       ...tick,
       spKind: tick.spKind || "recover",
     })),
   };
-
-  // Skill-based ultimate charge is now derived from consumed recover SP.
-  if (nextAction.type === "skill") {
-    nextAction.gaugeGain = 0;
-    nextAction.teamGaugeGain = 0;
-  }
-
-  return nextAction;
 }
 
 function resolveTrackMaxGauge(track: ScenarioTrack) {
@@ -101,6 +93,7 @@ const DEFAULT_SYSTEM_CONSTANTS: SystemConstants = {
   spRegenRate: 8,
   skillSpCostDefault: 100,
   linkCdReduction: 0,
+  prepDuration: 0,
   maxStagger: 100,
   staggerNodeCount: 0,
   staggerNodeDuration: 2,
@@ -136,6 +129,7 @@ export function compileScenario(
       spRegenRate: mergedSystemConstants.spRegenRate,
       skillSpCostDefault: mergedSystemConstants.skillSpCostDefault,
       linkCdReduction: mergedSystemConstants.linkCdReduction,
+      prepDuration: mergedSystemConstants.prepDuration,
     },
     enemyConfig: {
       maxStagger: mergedSystemConstants.maxStagger,
