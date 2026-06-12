@@ -107,9 +107,21 @@ function onDamageHitClick(hit) {
 
 // 连携冷却计算
 
-const effectiveCooldown = computed(() => {
-  const baseCd = props.action.cooldown || 0
-  if (props.action.type !== 'comboSkill') return baseCd
+const baseCooldown = computed(() => {
+  const resolved = store.compiledTimeline?.actionMap?.get(props.action.instanceId)
+  return Number(resolved?.node?.cooldown ?? props.action.cooldown) || 0
+})
+
+const simCdReduction = computed(() => {
+  const log = store.simLog || store.simulation?.simLog || []
+  return log
+    .filter((entry) => entry.type === 'CD_REDUCTION' && entry.payload?.actionId === props.action.instanceId)
+    .reduce((sum, entry) => sum + (Number(entry.payload?.reduction) || 0), 0)
+})
+
+const effectiveComboCooldown = computed(() => {
+  const baseCd = baseCooldown.value
+  if (props.action.type !== 'comboSkill') return 0
   const track = store.tracks.find(t => t.actions?.some(a => a.instanceId === props.action.instanceId))
   const clamp = (val) => {
     const num = Number(val) || 0
@@ -117,8 +129,18 @@ const effectiveCooldown = computed(() => {
     if (num > 100) return 100
     return num
   }
-  const reduction = clamp(track?.linkCdReduction ?? store.systemConstants.linkCdReduction ?? 0)
-  return baseCd * (1 - reduction / 100)
+  const reduction = clamp(track?.stats?.combo_cd_reduction ?? track?.linkCdReduction ?? store.systemConstants.linkCdReduction ?? 0)
+  const flat = Math.max(0, Number(track?.stats?.combo_cd_reduction_flat) || 0)
+  return Math.max(0, (baseCd - flat) * (1 - reduction / 100) - simCdReduction.value)
+})
+
+const effectiveUltimateCooldown = computed(() => {
+  const baseCd = baseCooldown.value
+  if (props.action.type !== 'ultimate') return 0
+  const track = store.tracks.find(t => t.actions?.some(a => a.instanceId === props.action.instanceId))
+  const pct = Math.max(0, Math.min(100, Number(track?.stats?.ult_cd_reduction) || 0))
+  const flat = Math.max(0, Number(track?.stats?.ult_cd_reduction_flat) || 0)
+  return Math.max(0, (baseCd - flat) * (1 - pct / 100) - simCdReduction.value)
 })
 
 // 主体样式计算
@@ -213,35 +235,56 @@ const style = computed(() => {
 })
 
 // 冷却条样式
-const cdStyle = computed(() => {
+const TRACKING_BAR_ROW_GAP = 8
+
+function getActionRealStartTime() {
+  const resolved = store.compiledTimeline?.actionMap?.get(props.action.instanceId)
+  return Number(resolved?.realStartTime ?? props.action.startTime) || 0
+}
+
+function getTrackingBarTransform(leftPx, rowIndex) {
   const layout = actionLayout.value
+  if (!layout) return null
+  return `translate(${layout.bar.leftEdge + leftPx}px, ${layout.bar.relativeY + TRACKING_BAR_ROW_GAP * rowIndex}px)`
+}
 
-  if (!layout) {
-    return { display: 'none' }
-  }
+function getCooldownStyle(cooldown, rowIndex) {
+  const layout = actionLayout.value
+  if (!layout) return { display: 'none' }
 
-  const start = Number(props.action.startTime) || 0
-  const cdVal = effectiveCooldown.value
-
+  const start = getActionRealStartTime()
+  const freezeDuration = props.action.type === 'ultimate' ? (Number(props.action.animationTime) || 0) : 0
+  const cdStart = start + freezeDuration
+  const cdVal = Number(cooldown) || 0
   if (cdVal <= 0) return { display: 'none' }
 
-  const width = store.timeToPx(start + cdVal) - store.timeToPx(start)
+  const left = store.timeToPx(cdStart) - store.timeToPx(start)
+  const width = store.timeToPx(cdStart + cdVal) - store.timeToPx(cdStart)
   return {
     width: `${width}px`,
-    transform: `translate(${layout.bar.leftEdge}px, ${layout.bar.relativeY}px)`,
+    transform: getTrackingBarTransform(left, rowIndex),
     opacity: 0.6
   }
+}
+
+const cdStyle = computed(() => {
+  return getCooldownStyle(effectiveComboCooldown.value, 0)
+})
+
+const ultCdStyle = computed(() => {
+  return getCooldownStyle(effectiveUltimateCooldown.value, 1)
 })
 
 // 强化时间样式
 const enhancementMetrics = computed(() => {
   const layout = actionLayout.value
-  if (!layout) return { widthPx: 0, extensionAmount: 0 }
+  if (!layout) return { widthPx: 0, extensionAmount: 0, enhStart: 0 }
 
-  const start = Number(props.action.startTime) || 0
-  const end = store.getShiftedEndTime(start, props.action.duration || 0, props.action.instanceId)
+  const start = getActionRealStartTime()
+  const freezeDuration = Number(props.action.animationTime || props.action.duration) || 0
+  const end = store.getShiftedEndTime(start, freezeDuration, props.action.instanceId)
   const time = Number(props.action.enhancementTime) || 0
-  if (time <= 0) return { widthPx: 0, extensionAmount: 0 }
+  if (time <= 0) return { widthPx: 0, extensionAmount: 0, enhStart: end }
 
   const ultimateMetrics = (props.action.type === 'ultimate')
       ? store.getUltimateEnhancementMetrics?.(props.action.instanceId)
@@ -254,7 +297,7 @@ const enhancementMetrics = computed(() => {
   const extensionAmount = snapTimeToFrame(shiftedEnhDuration - baseDuration)
   const widthPx = store.timeToPx(finalEnd) - store.timeToPx(end)
 
-  return { widthPx, extensionAmount }
+  return { widthPx, extensionAmount, enhStart: end }
 })
 
 const enhancementStyle = computed(() => {
@@ -264,11 +307,13 @@ const enhancementStyle = computed(() => {
     return { display: 'none' }
   }
 
+  const start = getActionRealStartTime()
+  const left = store.timeToPx(enhancementMetrics.value.enhStart) - store.timeToPx(start)
   const width = enhancementMetrics.value.widthPx
 
   return { 
     width: `${width}px`, 
-    transform: `translate(${layout.bar.rightEdge}px, ${layout.bar.relativeY}px)`,
+    transform: getTrackingBarTransform(left, 2),
     opacity: 0.8 
   }
 })
@@ -293,15 +338,18 @@ const triggerWindowStyle = computed(() => {
 // 自定义时间条
 const customBarsToRender = computed(() => {
   const bars = props.action.customBars || []
+  const resolvedAction = store.compiledTimeline?.actionMap?.get(props.action.instanceId)
+  const base = Number(resolvedAction?.realStartTime ?? props.action.startTime) || 0
+  const baseRow = props.action.type === 'ultimate' ? 3 : (effectiveComboCooldown.value > 0 ? 1 : 0)
+
   return bars.map((bar, index) => {
     const originalDuration = bar.duration || 0
     const originalOffset = bar.offset || 0
     if (originalDuration <= 0) return null
 
     // 计算起始点的现实偏移
-    const shiftedStartTimestamp = store.getShiftedEndTime(props.action.startTime, originalOffset, props.action.instanceId)
+    const shiftedStartTimestamp = store.getShiftedEndTime(base, originalOffset, props.action.instanceId)
     if (isCoveredBeforeStart(shiftedStartTimestamp)) return null
-    const shiftedOffset = shiftedStartTimestamp - props.action.startTime
 
     // 计算受时停影响后的结束点，从而得出最终视觉时长
     const shiftedEndTimestamp = store.getShiftedEndTime(shiftedStartTimestamp, originalDuration, props.action.instanceId)
@@ -310,13 +358,12 @@ const customBarsToRender = computed(() => {
     // 计算延长量
     const extensionAmount = snapTimeToFrame(shiftedDuration - originalDuration)
 
-    const base = Number(props.action.startTime) || 0
     const left = (store.timeToPx(shiftedStartTimestamp) - store.timeToPx(base)) - 2
     const width = store.timeToPx(shiftedEndTimestamp) - store.timeToPx(shiftedStartTimestamp)
-    const bottomOffset = -24 - (index * 16)
+    const transform = getTrackingBarTransform(left, baseRow + index)
 
     return {
-      style: { width: `${width}px`, left: `${left}px`, bottom: `${bottomOffset}px`, pointerEvents: 'none', opacity: 0.6, zIndex: 5 - index },
+      style: { width: `${width}px`, transform, pointerEvents: 'none', opacity: 0.6, zIndex: 5 - index },
       text: bar.text, originalDuration, extensionAmount,
       displayDuration: snapTimeToFrame(shiftedDuration)
     }
@@ -462,14 +509,27 @@ function handleActionDragStart(startPos, port) {
        :style="style"
        @click.stop
        @dragstart.prevent>
-    <div v-if="showDecorations && !isGhostMode && effectiveCooldown > 0" class="cd-bar-container bottom-bar" :style="cdStyle">
+    <div v-if="showDecorations && !isGhostMode && effectiveComboCooldown > 0" class="cd-bar-container bottom-bar" :style="cdStyle">
       <div class="cd-line" :style="{ backgroundColor: themeColor }"></div>
 
-      <span class="cd-text" :style="{ color: themeColor }">{{ store.formatTimeLabel(effectiveCooldown) }}</span>
+      <span class="cd-text" :style="{ color: themeColor }">{{ store.formatTimeLabel(effectiveComboCooldown) }}</span>
 
       <div class="cd-end-mark"
            :style="{
          backgroundColor: themeColor,
+         zIndex: 1
+       }">
+      </div>
+    </div>
+
+    <div v-if="showDecorations && !isGhostMode && effectiveUltimateCooldown > 0" class="cd-bar-container bottom-bar" :style="ultCdStyle">
+      <div class="cd-line" :style="{ backgroundColor: store.getColor('ultimate') }"></div>
+
+      <span class="cd-text" :style="{ color: store.getColor('ultimate') }">{{ store.formatTimeLabel(effectiveUltimateCooldown) }}</span>
+
+      <div class="cd-end-mark"
+           :style="{
+         backgroundColor: store.getColor('ultimate'),
          zIndex: 1
        }">
       </div>
@@ -504,7 +564,7 @@ function handleActionDragStart(startPos, port) {
       </div>
     </template>
 
-    <div v-if="showDecorations && !isGhostMode" class="damage-ticks-layer">
+    <div v-if="!isGhostMode" class="damage-ticks-layer">
       <div v-for="(tick, idx) in renderableHits" :key="idx"
            class="damage-tick-wrapper"
            :style="tick.style">

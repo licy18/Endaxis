@@ -7,6 +7,7 @@ import type {
   ResolvedDamageHitEffect,
 } from '@/data/types';
 import type { ResolvedAction } from '@/simulation/compiler/types';
+import { isUltimateLikeAction } from '@/simulation/compiler/types';
 import { isEnemyEffect } from '@/data/types';
 import type { SimulationContext } from './SimulationContext';
 import type { SpChangeEvent, HitEvent, ActionStartEvent } from '@/simulation/events/event.types';
@@ -514,8 +515,11 @@ export class TriggerRegistry {
       if (action.trackId !== targetTrackId) continue;
       const cd = action.node.cooldown ?? 0;
       if (cd <= 0) continue;
-      const cdEnd = action.realStartTime + cd;
-      if (time <= action.realStartTime || time >= cdEnd) continue;
+      const cdStart =
+        action.realStartTime +
+        (isUltimateLikeAction(action.node) ? Number(action.node.animationTime) || 0 : 0);
+      const cdEnd = cdStart + cd;
+      if (time <= cdStart || time >= cdEnd) continue;
       if (effect.skillTypes && !passesSkillFilter(effect.skillTypes, action.node.type)) continue;
       if (effect.skillId && !passesSkillFilter(effect.skillId, action.node.skillId)) continue;
       matchingActions.push(action);
@@ -523,7 +527,10 @@ export class TriggerRegistry {
 
     for (const target of matchingActions) {
       const baseCd = target.node.cooldown ?? 0;
-      const remaining = target.realStartTime + baseCd - time;
+      const cdStart =
+        target.realStartTime +
+        (isUltimateLikeAction(target.node) ? Number(target.node.animationTime) || 0 : 0);
+      const remaining = cdStart + baseCd - time;
 
       const reduction =
         effect.kind === 'cooldownReductionFlat' ? rawValue : (baseCd * rawValue) / 100;

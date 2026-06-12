@@ -400,6 +400,7 @@ const sheet: OperatorSheet = {
           duration: 2.13,
           damageGroups: [
             {
+              element: 'cryo',
               hits: [
                 {
                   id: 'yvonne-ultimate',

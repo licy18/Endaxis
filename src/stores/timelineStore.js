@@ -4279,8 +4279,10 @@ export const useTimelineStore = defineStore('timeline', () => {
             const baseDuration = Number(action.enhancementTime) || 0
             if (baseDuration <= 0) return null
 
-            const start = Number(action.startTime) || 0
-            const enhStart = getShiftedEndTime(start, Number(action.duration) || 0, action.instanceId)
+            const resolvedAction = compiledTimeline.value?.actionMap?.get(action.instanceId)
+            const start = Number(resolvedAction?.realStartTime ?? action.startTime) || 0
+            const freezeDuration = Number(action.animationTime || action.duration) || 0
+            const enhStart = getShiftedEndTime(start, freezeDuration, action.instanceId)
 
             let extraDuration = 0
 
