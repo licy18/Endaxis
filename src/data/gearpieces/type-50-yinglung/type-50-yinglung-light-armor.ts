@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Type 50 Yinglung Light Armor',
-  icon: '/equipment/item_equip_t4_suit_atk02_body_04.webp',
+  icon: '/equipment/atk02/item_equip_t4_suit_atk02_body_04.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

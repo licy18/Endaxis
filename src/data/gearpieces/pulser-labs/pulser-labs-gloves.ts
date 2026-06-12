@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Pulser Labs Gloves',
-  icon: '/equipment/item_equip_t4_suit_pulse_cryst01_hand_01.webp',
+  icon: '/equipment/pulse_cryst01/item_equip_t4_suit_pulse_cryst01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

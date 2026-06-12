@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'AIC Alloy Plate',
-  icon: '/equipment/item_equip_t1_suit_stragi01_edc_02.webp',
+  icon: '/equipment/stragi01/item_equip_t1_suit_stragi01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 28,
   defense: 8,

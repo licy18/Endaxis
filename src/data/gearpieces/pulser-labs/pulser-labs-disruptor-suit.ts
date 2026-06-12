@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Pulser Labs Disruptor Suit',
-  icon: '/equipment/item_equip_t4_suit_pulse_cryst01_body_01.webp',
+  icon: '/equipment/pulse_cryst01/item_equip_t4_suit_pulse_cryst01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

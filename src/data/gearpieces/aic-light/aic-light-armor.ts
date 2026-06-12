@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'AIC Light Armor',
-  icon: '/equipment/item_equip_t1_suit_wisdwill01_body_01.webp',
+  icon: '/equipment/wisdwill01/item_equip_t1_suit_wisdwill01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 28,
   defense: 22,

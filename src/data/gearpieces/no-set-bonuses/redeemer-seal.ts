@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Redeemer Seal',
-  icon: '/equipment/item_equip_t4_parts_wuling01_edc_03.webp',
+  icon: '/equipment/wuling01/item_equip_t4_parts_wuling01_edc_03.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

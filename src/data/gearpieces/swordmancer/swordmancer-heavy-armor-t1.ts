@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Swordmancer Heavy Armor T1',
-  icon: '/equipment/item_equip_t4_suit_phy01_body_03.webp',
+  icon: '/equipment/phy01/item_equip_t4_suit_phy01_body_03.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

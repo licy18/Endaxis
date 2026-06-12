@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Miner Overalls',
-  icon: '/equipment/item_equip_t1_parts_tundra01_body_02.webp',
+  icon: '/equipment/tundra01/item_equip_t1_parts_tundra01_body_02.webp',
   slotType: 'armor',
   levelRequirement: 20,
   defense: 16,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Miner Gloves T2',
-  icon: '/equipment/item_equip_t3_parts_tundra01_hand_01.webp',
+  icon: '/equipment/tundra01/item_equip_t3_parts_tundra01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 50,
   defense: 30,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Emergency Comm',
-  icon: '/equipment/item_equip_t1_parts_tundra01_edc_01.webp',
+  icon: '/equipment/tundra01/item_equip_t1_parts_tundra01_edc_01.webp',
   slotType: 'kit',
   levelRequirement: 20,
   defense: 6,

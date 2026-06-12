@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Qingbo Light Armor',
-  icon: '/equipment/item_equip_t4_suit_combo_cd01_body_02.webp',
+  icon: '/equipment/combo_cd01/item_equip_t4_suit_combo_cd01_body_02.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

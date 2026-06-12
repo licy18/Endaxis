@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Type 50 Yinglung Gloves',
-  icon: '/equipment/item_equip_t4_suit_atk02_hand_01.webp',
+  icon: '/equipment/atk02/item_equip_t4_suit_atk02_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

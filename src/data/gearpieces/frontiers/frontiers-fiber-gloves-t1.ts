@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Frontiers Fiber Gloves T1',
-  icon: '/equipment/item_equip_t4_suit_atb01_hand_03.webp',
+  icon: '/equipment/atb01/item_equip_t4_suit_atb01_hand_03.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

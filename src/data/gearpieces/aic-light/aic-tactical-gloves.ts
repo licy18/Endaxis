@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'AIC Tactical Gloves',
-  icon: '/equipment/item_equip_t1_suit_wisdwill01_hand_01.webp',
+  icon: '/equipment/wisdwill01/item_equip_t1_suit_wisdwill01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 28,
   defense: 16,

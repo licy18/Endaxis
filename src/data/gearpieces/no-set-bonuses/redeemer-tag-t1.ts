@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Redeemer Tag T1',
-  icon: '/equipment/item_equip_t4_parts_wuling01_edc_02.webp',
+  icon: '/equipment/wuling01/item_equip_t4_parts_wuling01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

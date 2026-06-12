@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Tide Surge Gauntlets',
-  icon: '/equipment/item_equip_t4_suit_burst01_hand_01.webp',
+  icon: '/equipment/burst01/item_equip_t4_suit_burst01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Roving MSGR Fists T1',
-  icon: '/equipment/item_equip_t3_suit_agi01_hand_01.webp',
+  icon: '/equipment/agi01/item_equip_t3_suit_agi01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 50,
   defense: 30,

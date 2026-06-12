@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Basic PPE',
-  icon: '/equipment/item_equip_t0_parts_tundra01_body_02.webp',
+  icon: '/equipment/tundra01/item_equip_t0_parts_tundra01_body_02.webp',
   slotType: 'armor',
   levelRequirement: 10,
   defense: 8,

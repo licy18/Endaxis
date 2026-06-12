@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'AIC Ceramic Plate',
-  icon: '/equipment/item_equip_t1_suit_wisdwill01_edc_02.webp',
+  icon: '/equipment/wisdwill01/item_equip_t1_suit_wisdwill01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 28,
   defense: 8,

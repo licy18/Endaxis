@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'MI Security Scope T1',
-  icon: '/equipment/item_equip_t4_suit_criti01_edc_06.webp',
+  icon: '/equipment/criti01/item_equip_t4_suit_criti01_edc_06.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

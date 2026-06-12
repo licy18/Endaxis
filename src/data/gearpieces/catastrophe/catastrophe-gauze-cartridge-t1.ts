@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Catastrophe Gauze Cartridge T1',
-  icon: '/equipment/item_equip_t3_suit_usp01_edc_02.webp',
+  icon: '/equipment/usp01/item_equip_t3_suit_usp01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 50,
   defense: 15,

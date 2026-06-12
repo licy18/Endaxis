@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Bonekrusha Wristband T1',
-  icon: '/equipment/item_equip_t4_suit_attri01_hand_02.webp',
+  icon: '/equipment/attri01/item_equip_t4_suit_attri01_hand_02.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

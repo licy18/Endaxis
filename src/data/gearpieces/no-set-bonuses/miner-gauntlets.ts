@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Miner Gauntlets',
-  icon: '/equipment/item_equip_t1_parts_tundra01_hand_01.webp',
+  icon: '/equipment/tundra01/item_equip_t1_parts_tundra01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 20,
   defense: 12,

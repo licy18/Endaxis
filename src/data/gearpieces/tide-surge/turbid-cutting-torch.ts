@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Turbid Cutting Torch',
-  icon: '/equipment/item_equip_t4_suit_burst01_edc_02.webp',
+  icon: '/equipment/burst01/item_equip_t4_suit_burst01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

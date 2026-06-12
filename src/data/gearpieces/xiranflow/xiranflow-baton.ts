@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Xiranflow Baton',
-  icon: '/equipment/item_equip_t4_suit_expend_spell01_edc_02.webp',
+  icon: '/equipment/expend_spell01/item_equip_t4_suit_expend_spell01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

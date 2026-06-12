@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Bonekrusha Heavy Armor T1',
-  icon: '/equipment/item_equip_t4_suit_attri01_body_02.webp',
+  icon: '/equipment/attri01/item_equip_t4_suit_attri01_body_02.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Swordmancer Flint',
-  icon: '/equipment/item_equip_t4_suit_phy01_edc_03.webp',
+  icon: '/equipment/phy01/item_equip_t4_suit_phy01_edc_03.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

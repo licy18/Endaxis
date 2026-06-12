@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Prototype Heavy Armor',
-  icon: '/equipment/item_equip_t1_parts_tundra01_body_03.webp',
+  icon: '/equipment/tundra01/item_equip_t1_parts_tundra01_body_03.webp',
   slotType: 'armor',
   levelRequirement: 28,
   defense: 22,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Mordvolt Insulation Gloves T1',
-  icon: '/equipment/item_equip_t3_suit_wisd01_hand_01.webp',
+  icon: '/equipment/wisd01/item_equip_t3_suit_wisd01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 50,
   defense: 30,

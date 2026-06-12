@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Armored MSGR Gloves T2',
-  icon: '/equipment/item_equip_t3_suit_str01_hand_02.webp',
+  icon: '/equipment/str01/item_equip_t3_suit_str01_hand_02.webp',
   slotType: 'gloves',
   levelRequirement: 50,
   defense: 30,

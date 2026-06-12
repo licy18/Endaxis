@@ -505,28 +505,9 @@ function getOperatorElementIcon(element) {
   return OPERATOR_ELEMENT_ICON_MAP[element] || OPERATOR_ELEMENT_ICON_MAP.physical
 }
 
-function mixHexColor(baseColor, mixColor = '#111111', mixRatio = 0.28) {
-  const parse = (value) => {
-    const match = String(value || '').trim().match(/^#?([0-9a-f]{6})$/i)
-    if (!match) return null
-    const hex = match[1]
-    return [
-      parseInt(hex.slice(0, 2), 16),
-      parseInt(hex.slice(2, 4), 16),
-      parseInt(hex.slice(4, 6), 16),
-    ]
-  }
-  const base = parse(baseColor)
-  const mix = parse(mixColor)
-  if (!base || !mix) return baseColor || '#777777'
-  const ratio = Math.min(Math.max(Number(mixRatio) || 0, 0), 1)
-  const rgb = base.map((channel, index) => Math.round(channel * (1 - ratio) + mix[index] * ratio))
-  return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
-}
-
 function getOperatorElementBadgeColor(element) {
-  const color = store.getColor(element)
-  return mixHexColor(color, '#111111', element === 'physical' ? 0.42 : 0.22)
+  if (element === 'physical') return '#8c8c8c'
+  return store.getColor(element)
 }
 
 function openCharacterSelector(index) {
@@ -2565,7 +2546,12 @@ onUnmounted(() => {
             <div v-for="char in group.list" :key="char.id" class="roster-card" :class="[{ 'is-selected': store.tracks.some(t => t.id === char.id) }, `rarity-${char.rarity}-style`]" @click="confirmCharacterSelection(char.id)">
               <div class="card-avatar-wrapper" :style="char.rarity === 6 ? {} : { borderColor: getRarityBaseColor(char.rarity) }">
                 <img :src="char.avatar" loading="lazy" />
-                <div class="element-badge" :style="{ backgroundColor: getOperatorElementBadgeColor(char.element) }" :title="char.elementName">
+                <div
+                  class="element-badge"
+                  :class="{ 'is-physical': char.element === 'physical' }"
+                  :style="{ backgroundColor: getOperatorElementBadgeColor(char.element) }"
+                  :title="char.elementName"
+                >
                   <img :src="getOperatorElementIcon(char.element)" alt="" loading="lazy" />
                 </div>
               </div>
@@ -4113,7 +4099,6 @@ body.capture-mode .davinci-range {
   height: 16px;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.72));
 }
 
 .card-name {

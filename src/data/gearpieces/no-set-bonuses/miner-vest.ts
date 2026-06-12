@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Miner Vest',
-  icon: '/equipment/item_equip_t1_parts_tundra01_body_05.webp',
+  icon: '/equipment/tundra01/item_equip_t1_parts_tundra01_body_05.webp',
   slotType: 'armor',
   levelRequirement: 28,
   defense: 22,

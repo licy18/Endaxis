@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Swordmancer Light Armor',
-  icon: '/equipment/item_equip_t4_suit_phy01_body_01.webp',
+  icon: '/equipment/phy01/item_equip_t4_suit_phy01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

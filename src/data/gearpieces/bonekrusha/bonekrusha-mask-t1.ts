@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Bonekrusha Mask T1',
-  icon: '/equipment/item_equip_t4_suit_attri01_edc_05.webp',
+  icon: '/equipment/attri01/item_equip_t4_suit_attri01_edc_05.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

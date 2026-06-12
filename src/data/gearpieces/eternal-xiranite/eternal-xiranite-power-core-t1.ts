@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Eternal Xiranite Power Core T1',
-  icon: '/equipment/item_equip_t4_suit_usp02_edc_02.webp',
+  icon: '/equipment/usp02/item_equip_t4_suit_usp02_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

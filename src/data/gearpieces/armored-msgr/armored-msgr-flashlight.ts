@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Armored MSGR Flashlight',
-  icon: '/equipment/item_equip_t2_suit_str01_edc_02.webp',
+  icon: '/equipment/str01/item_equip_t2_suit_str01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 36,
   defense: 10,

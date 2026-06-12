@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'MI Security Overalls T1',
-  icon: '/equipment/item_equip_t4_suit_criti01_body_03.webp',
+  icon: '/equipment/criti01/item_equip_t4_suit_criti01_body_03.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

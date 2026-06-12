@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Æthertech Light Gloves',
-  icon: '/equipment/item_equip_t4_suit_poise01_hand_02.webp',
+  icon: '/equipment/poise01/item_equip_t4_suit_poise01_hand_02.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

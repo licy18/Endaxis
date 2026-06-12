@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Pulser Labs Probe',
-  icon: '/equipment/item_equip_t4_suit_pulse_cryst01_edc_01.webp',
+  icon: '/equipment/pulse_cryst01/item_equip_t4_suit_pulse_cryst01_edc_01.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

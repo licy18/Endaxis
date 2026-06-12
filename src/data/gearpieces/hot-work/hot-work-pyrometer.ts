@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Hot Work Pyrometer',
-  icon: '/equipment/item_equip_t4_suit_fire_natr01_edc_02.webp',
+  icon: '/equipment/fire_natr01/item_equip_t4_suit_fire_natr01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Swordmancer TAC Gauntlets',
-  icon: '/equipment/item_equip_t4_suit_phy01_hand_02.webp',
+  icon: '/equipment/phy01/item_equip_t4_suit_phy01_hand_02.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

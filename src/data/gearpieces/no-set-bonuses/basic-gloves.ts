@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Basic Gloves',
-  icon: '/equipment/item_equip_t0_parts_tundra01_hand_02.webp',
+  icon: '/equipment/tundra01/item_equip_t0_parts_tundra01_hand_02.webp',
   slotType: 'gloves',
   levelRequirement: 10,
   defense: 6,

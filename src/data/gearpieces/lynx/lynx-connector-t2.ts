@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'LYNX Connector T2',
-  icon: '/equipment/item_equip_t4_suit_heal01_edc_02.webp',
+  icon: '/equipment/heal01/item_equip_t4_suit_heal01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Roving MSGR Jacket',
-  icon: '/equipment/item_equip_t2_suit_agi01_body_01.webp',
+  icon: '/equipment/agi01/item_equip_t2_suit_agi01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 36,
   defense: 28,

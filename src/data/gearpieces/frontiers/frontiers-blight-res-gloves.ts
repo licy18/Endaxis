@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Frontiers Blight RES Gloves',
-  icon: '/equipment/item_equip_t4_suit_atb01_hand_01.webp',
+  icon: '/equipment/atb01/item_equip_t4_suit_atb01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Miner Compression Core',
-  icon: '/equipment/item_equip_t2_parts_tundra01_edc_03.webp',
+  icon: '/equipment/tundra01/item_equip_t2_parts_tundra01_edc_03.webp',
   slotType: 'kit',
   levelRequirement: 36,
   defense: 10,

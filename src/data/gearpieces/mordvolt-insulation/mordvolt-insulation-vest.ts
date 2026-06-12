@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Mordvolt Insulation Vest',
-  icon: '/equipment/item_equip_t2_suit_wisd01_body_01.webp',
+  icon: '/equipment/wisd01/item_equip_t2_suit_wisd01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 36,
   defense: 28,

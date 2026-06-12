@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Qingbo Positioning Kit',
-  icon: '/equipment/item_equip_t4_suit_combo_cd01_edc_01.webp',
+  icon: '/equipment/combo_cd01/item_equip_t4_suit_combo_cd01_edc_01.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

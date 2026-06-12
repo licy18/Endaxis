@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Armored MSGR Gyro T1',
-  icon: '/equipment/item_equip_t3_suit_str01_edc_01.webp',
+  icon: '/equipment/str01/item_equip_t3_suit_str01_edc_01.webp',
   slotType: 'kit',
   levelRequirement: 50,
   defense: 15,

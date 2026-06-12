@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Redeemer Plates',
-  icon: '/equipment/item_equip_t4_parts_wuling01_body_01.webp',
+  icon: '/equipment/wuling01/item_equip_t4_parts_wuling01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

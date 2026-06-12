@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'LYNX Aegis Injector',
-  icon: '/equipment/item_equip_t4_suit_heal01_edc_04.webp',
+  icon: '/equipment/heal01/item_equip_t4_suit_heal01_edc_04.webp',
   slotType: 'kit',
   levelRequirement: 70,
   defense: 21,

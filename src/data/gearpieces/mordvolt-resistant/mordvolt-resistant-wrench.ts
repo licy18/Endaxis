@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Mordvolt Resistant Wrench',
-  icon: '/equipment/item_equip_t2_suit_will01_edc_01.webp',
+  icon: '/equipment/will01/item_equip_t2_suit_will01_edc_01.webp',
   slotType: 'kit',
   levelRequirement: 36,
   defense: 10,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Frontiers Protection Suit',
-  icon: '/equipment/item_equip_t4_suit_atb01_body_05.webp',
+  icon: '/equipment/atb01/item_equip_t4_suit_atb01_body_05.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Roving MSGR Flashlight',
-  icon: '/equipment/item_equip_t2_suit_agi01_edc_02.webp',
+  icon: '/equipment/agi01/item_equip_t2_suit_agi01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 36,
   defense: 10,

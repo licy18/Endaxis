@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Mordvolt Insulation Wrench T1',
-  icon: '/equipment/item_equip_t2_suit_wisd01_edc_02.webp',
+  icon: '/equipment/wisd01/item_equip_t2_suit_wisd01_edc_02.webp',
   slotType: 'kit',
   levelRequirement: 36,
   defense: 10,

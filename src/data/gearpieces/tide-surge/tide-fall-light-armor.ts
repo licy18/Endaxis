@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Tide Fall Light Armor',
-  icon: '/equipment/item_equip_t4_suit_burst01_body_01.webp',
+  icon: '/equipment/burst01/item_equip_t4_suit_burst01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

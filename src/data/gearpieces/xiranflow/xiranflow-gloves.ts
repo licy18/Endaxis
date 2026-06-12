@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Xiranflow Gloves',
-  icon: '/equipment/item_equip_t4_suit_expend_spell01_hand_02.webp',
+  icon: '/equipment/expend_spell01/item_equip_t4_suit_expend_spell01_hand_02.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'AIC Gauntlets',
-  icon: '/equipment/item_equip_t1_suit_stragi01_hand_01.webp',
+  icon: '/equipment/stragi01/item_equip_t1_suit_stragi01_hand_01.webp',
   slotType: 'gloves',
   levelRequirement: 28,
   defense: 16,

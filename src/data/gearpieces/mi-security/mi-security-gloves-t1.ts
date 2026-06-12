@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'MI Security Gloves T1',
-  icon: '/equipment/item_equip_t4_suit_criti01_hand_04.webp',
+  icon: '/equipment/criti01/item_equip_t4_suit_criti01_hand_04.webp',
   slotType: 'gloves',
   levelRequirement: 70,
   defense: 42,

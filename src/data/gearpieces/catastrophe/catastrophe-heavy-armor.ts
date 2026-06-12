@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Catastrophe Heavy Armor',
-  icon: '/equipment/item_equip_t3_suit_usp01_body_01.webp',
+  icon: '/equipment/usp01/item_equip_t3_suit_usp01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 50,
   defense: 40,

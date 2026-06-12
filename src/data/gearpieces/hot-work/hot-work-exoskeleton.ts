@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Hot Work Exoskeleton',
-  icon: '/equipment/item_equip_t4_suit_fire_natr01_body_01.webp',
+  icon: '/equipment/fire_natr01/item_equip_t4_suit_fire_natr01_body_01.webp',
   slotType: 'armor',
   levelRequirement: 70,
   defense: 56,

@@ -2,7 +2,7 @@ import type { GearPieceSheet } from '../../types';
 
 const sheet: GearPieceSheet = {
   name: 'Miner Comm T1',
-  icon: '/equipment/item_equip_t3_parts_tundra01_edc_04.webp',
+  icon: '/equipment/tundra01/item_equip_t3_parts_tundra01_edc_04.webp',
   slotType: 'kit',
   levelRequirement: 50,
   defense: 15,
