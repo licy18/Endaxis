@@ -2585,92 +2585,96 @@ onUnmounted(() => {
         </div>
 
         <div class="char-select-trigger">
-          <div
-            v-if="track.id"
-            class="initial-gauge-control"
-            :title="t('timelineGrid.track.initialGauge')"
-            @click.stop
-          >
-            <span class="initial-gauge-label">{{ t('timelineGrid.track.initialGaugeShort') }}</span>
-            <div class="initial-gauge-input-wrap">
-              <CustomNumberInput
-                :model-value="getInitialGaugeValue(track)"
-                :min="0"
-                :max="getInitialGaugeMax(track)"
-                :step="1"
-                active-color="#7dd3fc"
-                border-color="#7dd3fc"
-                text-align="center"
-                @update:model-value="val => updateInitialGauge(track, val)"
-              />
-            </div>
-            <span class="initial-gauge-max">/{{ getInitialGaugeMax(track) }}</span>
-          </div>
-          <div class="operator-row">
-            <div class="trigger-avatar-box" @click.stop="openCharacterSelector(index)" :title="t('timelineGrid.track.changeOperatorTooltip')">
-              <img v-if="track.id" :src="track.avatar" class="avatar-image" :alt="track.name"/>
-              <div v-else class="avatar-placeholder"></div>
-              <div class="avatar-change-hint" v-if="track.id">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21.5 2v6h-6"></path>
-                  <path d="M21.5 8A10 10 0 0 0 3 8"></path>
-                  <path d="M2.5 22v-6h6"></path>
-                  <path d="M2.5 16A10 10 0 0 0 21 16"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="trigger-info" @click="!track.id && openCharacterSelector(index)">
-              <button
-                v-if="store.tracks[index]?.id"
-                type="button"
-                class="track-stat-detail-btn"
-                :disabled="!store.tracks[index]?.operatorStatus"
-                :title="t('statDetail.button')"
-                @click.stop="openStatDetail(index)"
+          <div class="operator-main-block">
+            <div class="initial-gauge-slot">
+              <div
+                  v-if="track.id"
+                  class="initial-gauge-control"
+                  :title="t('timelineGrid.track.initialGauge')"
+                  @click.stop
               >
-                {{ t('statDetail.button') }}
-              </button>
-              <span class="trigger-name">{{ track.name || t('timelineGrid.track.selectOperator') }}</span>
+                <span class="initial-gauge-label">{{ t('timelineGrid.track.initialGaugeShort') }}</span>
+                <div class="initial-gauge-input-wrap">
+                  <CustomNumberInput
+                      :model-value="getInitialGaugeValue(track)"
+                      :min="0"
+                      :max="getInitialGaugeMax(track)"
+                      :step="1"
+                      active-color="#7dd3fc"
+                      border-color="#7dd3fc"
+                      text-align="center"
+                      @update:model-value="val => updateInitialGauge(track, val)"
+                  />
+                </div>
+                <span class="initial-gauge-max">/{{ getInitialGaugeMax(track) }}</span>
+              </div>
+            </div>
+
+            <div class="operator-row">
+              <div class="trigger-avatar-box" @click.stop="openCharacterSelector(index)" :title="t('timelineGrid.track.changeOperatorTooltip')">
+                <img v-if="track.id" :src="track.avatar" class="avatar-image" :alt="track.name"/>
+                <div v-else class="avatar-placeholder"></div>
+                <div class="avatar-change-hint" v-if="track.id">
+                  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6"></path>
+                    <path d="M21.5 8A10 10 0 0 0 3 8"></path>
+                    <path d="M2.5 22v-6h6"></path>
+                    <path d="M2.5 16A10 10 0 0 0 21 16"></path>
+                  </svg>
+                </div>
+            </div>
+              <div class="trigger-info" @click="!track.id && openCharacterSelector(index)">
+                <button
+                    v-if="store.tracks[index]?.id"
+                    type="button"
+                    class="track-stat-detail-btn"
+                    :disabled="!store.tracks[index]?.operatorStatus"
+                    :title="t('statDetail.button')"
+                    @click.stop="openStatDetail(index)"
+                >
+                  {{ t('statDetail.button') }}
+                </button>
+                <span class="trigger-name">{{ track.name || t('timelineGrid.track.selectOperator') }}</span>
+              </div>
+            </div>
+          </div>
+        <div v-if="track.id" class="gear-panel">
+          <div class="gear-row">
+            <div class="weapon-slot-compact" @click.stop="openWeaponSelector(index)" :title="t('timelineGrid.track.selectWeaponTooltip')">
+              <div class="weapon-box" :class="getWeaponForTrack(track) ? '' : 'weapon-empty'">
+                <img v-if="getWeaponForTrack(track)?.icon" :src="getWeaponForTrack(track).icon" @error="e=>e.target.style.display='none'" />
+                <div v-else class="weapon-placeholder"></div>
+              </div>
+            </div>
+            <div class="equip-slots-compact">
+              <div class="equip-grid">
+                <div class="equip-box" :class="getEquipmentForTrack(track, 'armor') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'armor')" :title="t('timelineGrid.equipmentSlot.armor')">
+                  <img v-if="getEquipmentForTrack(track, 'armor')?.icon" :src="getEquipmentForTrack(track, 'armor').icon" @error="e=>e.target.style.display='none'" />
+                  <div v-else class="equip-placeholder"></div>
+                </div>
+                <div class="equip-box" :class="getEquipmentForTrack(track, 'gloves') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'gloves')" :title="t('timelineGrid.equipmentSlot.gloves')">
+                  <img v-if="getEquipmentForTrack(track, 'gloves')?.icon" :src="getEquipmentForTrack(track, 'gloves').icon" @error="e=>e.target.style.display='none'" />
+                  <div v-else class="equip-placeholder"></div>
+                </div>
+                <div class="equip-box" :class="getEquipmentForTrack(track, 'accessory1') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'accessory1')" :title="t('timelineGrid.equipmentSlot.accessory1')">
+                  <img v-if="getEquipmentForTrack(track, 'accessory1')?.icon" :src="getEquipmentForTrack(track, 'accessory1').icon" @error="e=>e.target.style.display='none'" />
+                  <div v-else class="equip-placeholder"></div>
+                </div>
+                <div class="equip-box" :class="getEquipmentForTrack(track, 'accessory2') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'accessory2')" :title="t('timelineGrid.equipmentSlot.accessory2')">
+                  <img v-if="getEquipmentForTrack(track, 'accessory2')?.icon" :src="getEquipmentForTrack(track, 'accessory2').icon" @error="e=>e.target.style.display='none'" />
+                  <div v-else class="equip-placeholder"></div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div v-if="track.id" class="gear-panel">
-            <div class="gear-row">
-              <div class="weapon-slot-compact" @click.stop="openWeaponSelector(index)" :title="t('timelineGrid.track.selectWeaponTooltip')">
-                <div class="weapon-box" :class="getWeaponForTrack(track) ? '' : 'weapon-empty'">
-                  <img v-if="getWeaponForTrack(track)?.icon" :src="getWeaponForTrack(track).icon" @error="e=>e.target.style.display='none'" />
-                  <div v-else class="weapon-placeholder"></div>
-                </div>
-              </div>
-              <div class="equip-slots-compact">
-                <div class="equip-grid">
-                  <div class="equip-box" :class="getEquipmentForTrack(track, 'armor') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'armor')" :title="t('timelineGrid.equipmentSlot.armor')">
-                    <img v-if="getEquipmentForTrack(track, 'armor')?.icon" :src="getEquipmentForTrack(track, 'armor').icon" @error="e=>e.target.style.display='none'" />
-                    <div v-else class="equip-placeholder"></div>
-                  </div>
-                  <div class="equip-box" :class="getEquipmentForTrack(track, 'gloves') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'gloves')" :title="t('timelineGrid.equipmentSlot.gloves')">
-                    <img v-if="getEquipmentForTrack(track, 'gloves')?.icon" :src="getEquipmentForTrack(track, 'gloves').icon" @error="e=>e.target.style.display='none'" />
-                    <div v-else class="equip-placeholder"></div>
-                  </div>
-                  <div class="equip-box" :class="getEquipmentForTrack(track, 'accessory1') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'accessory1')" :title="t('timelineGrid.equipmentSlot.accessory1')">
-                    <img v-if="getEquipmentForTrack(track, 'accessory1')?.icon" :src="getEquipmentForTrack(track, 'accessory1').icon" @error="e=>e.target.style.display='none'" />
-                    <div v-else class="equip-placeholder"></div>
-                  </div>
-                  <div class="equip-box" :class="getEquipmentForTrack(track, 'accessory2') ? '' : 'equip-empty'" @click.stop="openEquipmentSelector(index, 'accessory2')" :title="t('timelineGrid.equipmentSlot.accessory2')">
-                    <img v-if="getEquipmentForTrack(track, 'accessory2')?.icon" :src="getEquipmentForTrack(track, 'accessory2').icon" @error="e=>e.target.style.display='none'" />
-                    <div v-else class="equip-placeholder"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="gear-hint-row">
-              <div class="set-bonus-hint" :class="{ 'is-hidden': !store.getActiveSetBonusCategories(track.id)?.length }">
-                {{ t('timelineGrid.track.setBonusActive') }}
-              </div>
+          <div class="gear-hint-row">
+            <div class="set-bonus-hint" :class="{ 'is-hidden': !store.getActiveSetBonusCategories(track.id)?.length }">
+              {{ t('timelineGrid.track.setBonusActive') }}
             </div>
           </div>
         </div>
+      </div>
 
       </div>
     </div>
@@ -3680,12 +3684,34 @@ body.capture-mode .davinci-range {
   position: relative;
 }
 
+.operator-main-block {
+  --initial-gauge-slot-height: 40px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+}
+.initial-gauge-slot {
+  grid-row: 1;
+  align-self: end;
+  height: var(--initial-gauge-slot-height);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: visible;
+}
+
 .operator-row {
+  grid-row: 2;
   display: flex;
   align-items: center;
   min-width: 0;
-  height: var(--track-height, 50px);
-  flex: 0 0 var(--track-height, 50px);
+  height: auto;
+  flex: none;
 }
 
 .trigger-avatar-box {
@@ -3805,18 +3831,14 @@ body.capture-mode .davinci-range {
 .initial-gauge-control {
   --initial-gauge-accent: #7dd3fc;
   --initial-gauge-input-width: 54px;
-  position: absolute;
-  top: clamp(8px, calc(50% - 42px), 30px);
-  left: 6px;
-  right: 6px;
+  position: relative;
   z-index: 3;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  width: auto;
+  width: 100%;
   height: 20px;
-  margin-bottom: 0;
   padding-left: 1px;
   color: var(--initial-gauge-accent);
   font-size: 10px;

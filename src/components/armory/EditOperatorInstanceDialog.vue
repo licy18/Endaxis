@@ -489,6 +489,7 @@ function promotedLabel() {
 }
 
 :global(.operator-edit-tooltip-popper.el-popper.is-dark) {
+  padding: 0 !important;
   background: #d8d8d8;
   color: #111;
   border: 1px solid rgba(0, 0, 0, 0.22);
@@ -501,26 +502,27 @@ function promotedLabel() {
 }
 
 :global(.operator-edit-tooltip) {
+  box-sizing: border-box;
   min-width: 200px;
   max-width: 320px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  padding: 6px 10px 8px;
   color: #111;
 }
-
 :global(.operator-edit-tooltip-title) {
   color: #050505;
   font-size: 13px;
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
 :global(.operator-edit-tooltip-desc) {
   color: rgba(0, 0, 0, 0.78);
   font-size: 12px;
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 1.45;
   white-space: pre-wrap;
 }
 </style>
