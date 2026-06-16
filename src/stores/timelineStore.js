@@ -130,7 +130,7 @@ const createOwnSkillLinkEnhancer = ({ linkSubtract = 0.0 } = {}) => {
     }
 }
 
-const laevatainEnhancementExtender = createOwnSkillLinkEnhancer({ linkSubtract: 0.5 })
+const laevatainEnhancementExtender = createOwnSkillLinkEnhancer({ linkSubtract: 0 })
 
 const ULTIMATE_ENHANCEMENT_EXTENDERS = {
     laevatain: laevatainEnhancementExtender,

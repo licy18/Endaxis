@@ -738,6 +738,7 @@ const sheet: OperatorSheet = {
       ],
     },
     ultimate: {
+      element: 'electric',
       segments: [
         {
           duration: 2.8,

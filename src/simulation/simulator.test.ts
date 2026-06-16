@@ -1186,6 +1186,49 @@ describe("optimizer-native runtime parity", () => {
     expect(gaugeEntry?.payload.gauge).toBe(15);
   });
 
+  it("blocks positive ultimate energy gains during own ultimate enhancement window", () => {
+    const simulation = runScenario([
+      createTrack(
+          "alpha",
+          [
+            createAction("ult", "ultimate", {
+              startTime: 0,
+              duration: 2,
+              animationTime: 1,
+              enhancementTime: 5,
+              gaugeCost: 50,
+            }),
+            createAction("gain-inside", "battleSkill", {
+              startTime: 2,
+              duration: 1,
+              gaugeGain: 10,
+            }),
+            createAction("gain-after", "battleSkill", {
+              startTime: 8,
+              duration: 1,
+              gaugeGain: 10,
+            }),
+          ],
+          {
+            initialGauge: 50,
+            maxGaugeOverride: 100,
+          },
+      ),
+    ]);
+
+    const ueEntries = simulation.simLog.filter(
+        (entry) => entry.type === "ULT_ENERGY_CHANGE",
+    );
+
+    expect(
+        ueEntries.some((entry) => entry.payload.sourceId === "gain-inside_inst"),
+    ).toBe(false);
+
+    expect(
+        ueEntries.some((entry) => entry.payload.sourceId === "gain-after_inst"),
+    ).toBe(true);
+  });
+
   it("maps optimizer enemy effect layout into ResourceMonitor affliction groups", () => {
     const viz = projectEnemyAfflictionViz({
       positionedSegments: [

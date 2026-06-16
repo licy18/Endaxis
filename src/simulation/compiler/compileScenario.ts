@@ -56,27 +56,28 @@ function resolveTrackMaxGauge(track: ScenarioTrack) {
 
 function processActors(tracks: ScenarioTrack[]): ActorSnapshot[] {
   return tracks
-    .filter((t) => !!t.id)
-    .map((track) => {
-      return {
-        id: track.id,
-        element: (track as any).element,
-        stats: track.stats,
-        baseStats: track.baseStats ?? null,
-        triggerEffects: track.triggerEffects || [],
-        acceptTeamGauge: track.acceptTeamGauge !== false,
-        acceptTeamUltEnergy: track.acceptTeamGauge !== false,
-        ultimateEnergyCostOverride: track.maxGaugeOverride ?? null,
-        resources: {
-          hp: track.stats.hp,
-          gauge: track.initialGauge,
-          maxGauge: resolveTrackMaxGauge(track),
-          ultimateEnergy: track.initialGauge,
-        },
-        cooldowns: new Map(),
-        activeBuffs: new Map(),
-      };
-    });
+      .filter((t) => !!t.id)
+      .map((track) => {
+        const maxGauge = resolveTrackMaxGauge(track);
+        return {
+          id: track.id,
+          element: (track as any).element,
+          stats: track.stats,
+          baseStats: track.baseStats ?? null,
+          triggerEffects: track.triggerEffects || [],
+          acceptTeamGauge: track.acceptTeamGauge !== false,
+          acceptTeamUltEnergy: track.acceptTeamUltEnergy ?? track.acceptTeamGauge !== false,
+          ultimateEnergyCostOverride: maxGauge,
+          resources: {
+            hp: track.stats.hp,
+            gauge: track.initialGauge,
+            maxGauge,
+            ultimateEnergy: track.initialGauge,
+          },
+          cooldowns: new Map(),
+          activeBuffs: new Map(),
+        };
+      });
 }
 
 export function normalizeScenario(scenario: ScenarioData) {
