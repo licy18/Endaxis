@@ -58,7 +58,7 @@
     "subSkills": {
       "enhancedBattleSkill": "强化战技",
       "enhancedComboSkill": "强化连携",
-      "enhancedBasicAttack": "强化普攻"
+      "enhancedBasicAttack": "强化重击"
     }
   },
   "rossi": {
@@ -681,7 +681,7 @@
       "ultimate": { "name": "冷冻射手" }
     },
     "subSkills": {
-      "enhancedBasicAttack": "强化普攻"
+      "enhancedBasicAttack": "强化重击"
     }
   },
   "last-rite": {

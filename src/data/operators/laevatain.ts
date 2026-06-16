@@ -1,4 +1,4 @@
-import type { OperatorSheet, StatusEffect } from '../types';
+import type { Effect, OperatorSheet, StatusEffect } from '../types';
 
 const GAIN_MELTING_FLAME_EFFECT: StatusEffect = {
   id: 'laevatain-melting-flame',
@@ -14,6 +14,27 @@ const GAIN_MELTING_FLAME_EFFECT: StatusEffect = {
     'operators/laevatain/magma_4.webp',
   ],
 };
+
+const createAbsorbHeatInflictionEffects = (): Effect[] =>
+    [0, 1, 2, 3].map(x => ({
+      kind: 'consume',
+      enemyStatus: 'heatInfliction',
+      consumeStacks: 4 - x,
+      condition:
+          x === 0
+              ? {
+                kind: 'not',
+                condition: {
+                  kind: 'operatorStatus',
+                  status: 'laevatain-melting-flame',
+                },
+              }
+              : {
+                kind: 'operatorStatus',
+                status: 'laevatain-melting-flame',
+                stacks: { compare: 'exact', count: x },
+              },
+    }));
 
 const sheet: OperatorSheet = {
   gameId: 'LAEVATAIN',
@@ -39,25 +60,11 @@ const sheet: OperatorSheet = {
       triggers: [
         {
           trigger: { kind: 'onFinalStrike', triggerScope: 'global' },
-          effects: [0, 1, 2, 3].map(x => ({
-            kind: 'consume',
-            enemyStatus: 'heatInfliction',
-            consumeStacks: 4 - x,
-            condition:
-              x === 0
-                ? {
-                    kind: 'not',
-                    condition: {
-                      kind: 'operatorStatus',
-                      status: 'laevatain-melting-flame',
-                    },
-                  }
-                : {
-                    kind: 'operatorStatus',
-                    status: 'laevatain-melting-flame',
-                    stacks: { compare: 'exact', count: x },
-                  },
-          })),
+          effects: createAbsorbHeatInflictionEffects(),
+        },
+        {
+          trigger: { kind: 'onFinisher', triggerScope: 'global' },
+          effects: createAbsorbHeatInflictionEffects(),
         },
         {
           trigger: { kind: 'onStatusConsumed', status: 'heatInfliction', target: 'enemy' },
@@ -485,6 +492,7 @@ const sheet: OperatorSheet = {
               duration: 0.6,
               damageGroups: [
                 {
+                  element: 'heat',
                   multiplier: [65, 71, 78, 84, 91, 97, 104, 110, 117, 125, 134, 146],
                   multiplierMode: 'split',
                   hits: [
@@ -499,6 +507,7 @@ const sheet: OperatorSheet = {
               duration: 0.93,
               damageGroups: [
                 {
+                  element: 'heat',
                   multiplier: [81, 89, 97, 105, 113, 122, 130, 138, 146, 156, 168, 182],
                   multiplierMode: 'split',
                   hits: [
@@ -516,6 +525,7 @@ const sheet: OperatorSheet = {
               duration: 0.5,
               damageGroups: [
                 {
+                  element: 'heat',
                   multiplier: [115, 127, 139, 150, 162, 173, 185, 196, 208, 222, 240, 260],
                   multiplierMode: 'split',
                   hits: [
@@ -531,6 +541,7 @@ const sheet: OperatorSheet = {
               duration: 1.2,
               damageGroups: [
                 {
+                  element: 'heat',
                   multiplier: [203, 223, 243, 263, 284, 304, 324, 344, 365, 390, 420, 456],
                   multiplierMode: 'split',
                   hits: [

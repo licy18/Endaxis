@@ -776,6 +776,7 @@ const sheet: OperatorSheet = {
               duration: 0.73,
               damageGroups: [
                 {
+                  element: 'electric',
                   multiplier: [67, 73, 80, 86, 93, 100, 106, 113, 120, 128, 138, 150],
                   multiplierMode: 'split',
                   hits: [
@@ -790,6 +791,7 @@ const sheet: OperatorSheet = {
               duration: 0.9,
               damageGroups: [
                 {
+                  element: 'electric',
                   multiplier: [94, 103, 112, 122, 131, 140, 150, 159, 168, 180, 194, 210],
                   multiplierMode: 'split',
                   hits: [
@@ -804,6 +806,7 @@ const sheet: OperatorSheet = {
               duration: 2,
               damageGroups: [
                 {
+                  element: 'electric',
                   multiplier: [134, 147, 160, 174, 187, 200, 214, 227, 240, 257, 277, 300],
                   multiplierMode: 'split',
                   hits: [

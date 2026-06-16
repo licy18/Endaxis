@@ -58,7 +58,7 @@
     "subSkills": {
       "enhancedBattleSkill": "E. Skill",
       "enhancedComboSkill": "E. Combo",
-      "enhancedBasicAttack": "E. Basic"
+      "enhancedBasicAttack": "E. Heavy"
     }
   },
   "rossi": {
@@ -681,7 +681,7 @@
       "ultimate": { "name": "Cryoblasting Pistolier" }
     },
     "subSkills": {
-      "enhancedBasicAttack": "E. Basic"
+      "enhancedBasicAttack": "E. Heavy"
     }
   },
   "last-rite": {

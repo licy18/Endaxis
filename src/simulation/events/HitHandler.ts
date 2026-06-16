@@ -487,6 +487,7 @@ export class HitHandler implements EventHandler<HitEvent> {
     if (hit.multiplier) this.registry?.onHit(e, ctx);
     this.registry?.onFinalStrike(e, ctx);
     this.registry?.onDive(e, ctx);
+    this.registry?.onFinisher(e, ctx);
   }
 
   /** Shrink ACTION_END when a conditional hit with durationExtension is skipped. */

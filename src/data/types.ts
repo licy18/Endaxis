@@ -126,6 +126,7 @@ interface TriggerScopeFilter {
 export type TriggerEvent =
   | ({ kind: 'onHit' } & TriggerSkillFilter & TriggerScopeFilter)
   | ({ kind: 'onFinalStrike' } & TriggerScopeFilter)
+  | ({ kind: 'onFinisher' } & TriggerScopeFilter)
   | ({ kind: 'onDive' } & TriggerScopeFilter)
   | ({ kind: 'onSpRecovery' } & TriggerSkillFilter)
   | ({ kind: 'onStatusApplied' } & TriggerSkillFilter & TriggerStatusFilter & TriggerScopeFilter)

@@ -196,6 +196,35 @@ export class TriggerRegistry {
     }
   }
 
+  onFinisher(event: HitEvent, ctx: SimulationContext): void {
+    const actorId = event.payload.sourceId;
+    const action = ctx.getAction(event.payload.actionId);
+    if (!action) return;
+
+    const resolvedHits = action.resolvedHits;
+    if (!resolvedHits.length || event.payload.hitData !== resolvedHits[resolvedHits.length - 1])
+      return;
+
+    if (action.node.type !== 'finisher') return;
+
+    for (const entry of this.entries) {
+      if (!this.matchesScope(entry, actorId)) continue;
+      const { trigger } = entry.triggerEffect;
+      if (trigger.kind !== 'onFinisher') continue;
+
+      this.dispatch(
+          entry.triggerEffect.effects,
+          event.time,
+          entry.sourceTrackId,
+          ctx,
+          1,
+          undefined,
+          entry.sourceSkillType,
+          actorId,
+      );
+    }
+  }
+
   onActionStart(event: ActionStartEvent, ctx: SimulationContext): void {
     const actorId = event.payload.actorId;
     const action = ctx.getAction(event.payload.actionId);
