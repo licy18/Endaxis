@@ -130,8 +130,17 @@ const createOwnSkillLinkEnhancer = ({ linkSubtract = 0.0 } = {}) => {
     }
 }
 
+const laevatainEnhancementExtender = createOwnSkillLinkEnhancer({ linkSubtract: 0.5 })
+
 const ULTIMATE_ENHANCEMENT_EXTENDERS = {
-    ['LAEVATAIN']: createOwnSkillLinkEnhancer({ linkSubtract: 0.5 }),
+    laevatain: laevatainEnhancementExtender,
+}
+
+function getUltimateEnhancementExtender(trackId) {
+    const key = String(trackId ?? '').trim()
+    return ULTIMATE_ENHANCEMENT_EXTENDERS[key]
+        ?? ULTIMATE_ENHANCEMENT_EXTENDERS[key.toLowerCase()]
+        ?? null
 }
 
 function shiftSnapshotTimes(snapshot, delta) {
@@ -4324,7 +4333,7 @@ export const useTimelineStore = defineStore('timeline', () => {
 
             let extraDuration = 0
 
-            const extender = ULTIMATE_ENHANCEMENT_EXTENDERS[trackId]
+            const extender = getUltimateEnhancementExtender(trackId)
             if (typeof extender === 'function') {
                 const track = tracks.value.find(t => t.id === trackId)
                 if (track) {
@@ -4464,7 +4473,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                     const enhT = Number(action.enhancementTime || 0);
 
                     let end = null
-                    if (typeof ULTIMATE_ENHANCEMENT_EXTENDERS[trackId] === 'function' && enhT > 0) {
+                    if (typeof getUltimateEnhancementExtender(trackId) === 'function' && enhT > 0) {
                         const metrics = getUltimateEnhancementMetrics(action.instanceId)
                         if (metrics?.finalEnd) end = snapTimeToFrame(metrics.finalEnd)
                     }

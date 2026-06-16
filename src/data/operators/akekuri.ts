@@ -248,6 +248,7 @@ const sheet: OperatorSheet = {
           duration: 4.3,
           damageGroups: [
             {
+              element: 'heat',
               hits: [
                 {
                   offset: 1.683,

@@ -770,6 +770,7 @@ export interface PotentialEntry {
 
 export interface CombatSkillEntry {
   segments: Segment[];
+  element?: DamageElement;
   subSkills?: SubSkillEntry[];
   triggers?: TriggerEffect[];
   /** Passive effects active while this skill is available/equipped. Resolved by skill level. */

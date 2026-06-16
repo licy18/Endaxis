@@ -24,7 +24,6 @@ const { enemyDatabase, enemyCategories } = storeToRefs(store)
 const ENEMY_TIERS = store.ENEMY_TIERS
 const TIER_WEIGHTS = { 'boss': 5, 'head': 4, 'champion': 3, 'elite': 2, 'normal': 1 }
 
-// === 甯冨眬甯搁噺 ===
 const MIN_CHART_HEIGHT = 116
 const MAX_CHART_HEIGHT = 520
 
@@ -413,7 +412,6 @@ const gridLineTimes = computed(() => {
   return result
 })
 
-// === 棰滆壊甯搁噺 ===
 const COLOR_STAGGER = '#ff7875'
 const COLOR_LIMIT = '#d32f2f'
 const COLOR_SP_MAIN = '#ffd700'
@@ -782,7 +780,6 @@ const afflictionLayout = computed(() => {
   }
 })
 
-// === 鏁屼汉閫夋嫨鍣ㄩ€昏緫 ===
 const CATEGORY_ALL = '__ALL__'
 const CATEGORY_UNCATEGORIZED = '__UNCAT__'
 const isEnemySelectorVisible = ref(false)
@@ -864,7 +861,6 @@ function selectEnemy(id) {
   isEnemySelectorVisible.value = false
 }
 
-// === 鏁版嵁璁＄畻 (澶辫　)===
 const staggerResult = computed(() => {
   return store.staggerSeries
 })
@@ -908,7 +904,6 @@ const lockZones = computed(() => lockSegments.value.map(seg => ({
 })))
 
 
-// === 鏁版嵁璁＄畻 (鎶€鍔? ===
 const spData = computed(() => {
   return store.spSeries
 })
@@ -920,7 +915,6 @@ const SP_ZERO_Y = computed(() => {
 })
 const SP_WARNING_TAG_HEIGHT = 18
 
-// 鎶€鍔涚粯鍥惧潗鏍囪绠?
 const scaleY_SP = computed(() => {
   return SP_BODY_HEIGHT.value / SP_TOTAL_RANGE.value
 })
@@ -1460,7 +1454,6 @@ const transformStyle = computed(() => {
 </template>
 
 <style scoped>
-/* 鍩虹甯冨眬涓庝晶杈规爮瀹瑰櫒 */
 .resource-monitor-layout {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
@@ -1483,7 +1476,6 @@ const transformStyle = computed(() => {
   height: 100%;
 }
 
-/* 鏁屼汉閫夋嫨妯″潡 */
 .enemy-select-module {
   padding: 8px 10px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
@@ -1568,7 +1560,6 @@ const transformStyle = computed(() => {
   margin-top: 1px;
 }
 
-/* 灞炴€ц缃尯 */
 .settings-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
@@ -1620,7 +1611,6 @@ const transformStyle = computed(() => {
   font-size: 11px !important;
 }
 
-/* 鍥捐〃灞曠ず鍖?*/
 .chart-scroll-wrapper {
   width: 100%;
   height: 100%;
@@ -1764,7 +1754,6 @@ const transformStyle = computed(() => {
   transform: rotate(-135deg);
 }
 
-/* === 闄勭潃/寮傚父鍙犲眰 === */
 .affliction-connections-overlay {
   position: absolute;
   top: 0;
@@ -1913,7 +1902,6 @@ const transformStyle = computed(() => {
   white-space: nowrap;
 }
 
-/* 鏁屼汉閫夋嫨寮圭獥瀹瑰櫒 */
 .enemy-list-grid {
   max-height: 450px;
   overflow-y: auto;
@@ -1922,7 +1910,6 @@ const transformStyle = computed(() => {
 }
 .enemy-list-grid::-webkit-scrollbar { display: none; }
 
-/* 鍒嗙被椤电 */
 .category-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1942,7 +1929,6 @@ const transformStyle = computed(() => {
   --ea-btn-px: 16px;
 }
 
-/* --- 鍒嗙粍鏍囬鏍峰紡 --- */
 .enemy-group-section {
   margin-bottom: 24px;
 }
@@ -1966,7 +1952,6 @@ const transformStyle = computed(() => {
   font-weight: normal;
 }
 
-/* --- 鏁屼汉鍗＄墖缃戞牸甯冨眬 (3鍒? --- */
 .group-items {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2061,7 +2046,6 @@ const transformStyle = computed(() => {
   text-overflow: ellipsis;
 }
 
-/* 鑷畾涔夋晫浜虹殑鐗规畩澶村儚鏍峰紡 */
 .enemy-avatar.custom {
   width: 100%;
   height: 100%;
@@ -2078,14 +2062,12 @@ const transformStyle = computed(() => {
   text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
 }
 
-/* 閫変腑鐘舵€佷笅鐨勮嚜瀹氫箟澶村儚鍙樺寲 */
 .enemy-card.selected .enemy-avatar.custom {
   background: rgba(255, 215, 0, 0.15);
   border-style: solid;
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
 }
 
-/* 鍔ㄧ敾瀹氫箟 */
 @keyframes scan {
   0% { transform: translateY(-10cqh); }
   100% { transform: translateY(110cqh); }

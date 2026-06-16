@@ -356,6 +356,7 @@ const sheet: OperatorSheet = {
         {
           group: 'battleSkill',
           name: 'enhancedBattleSkill',
+          icon: '/operators/laevatain/ultimate_skill.webp',
           segments: [
             {
               duration: 1.1,
@@ -412,6 +413,7 @@ const sheet: OperatorSheet = {
                     {
                       id: 'laevatain-battle-additional-attack-during-ultimate',
                       offset: 1.9,
+                      durationExtension: 0.93,
                       stagger: 10,
                       effects: [
                         {
@@ -425,7 +427,7 @@ const sheet: OperatorSheet = {
                           duration: 5,
                         },
                       ],
-                    },
+                    }
                   ],
                   condition: {
                     kind: 'operatorStatus',
@@ -462,6 +464,7 @@ const sheet: OperatorSheet = {
       cooldown: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9],
     },
     ultimate: {
+      element: 'heat',
       segments: [
         {
           duration: 2.37,

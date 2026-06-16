@@ -351,6 +351,7 @@ const equipmentSearchQuery = ref('')
 const equipmentCategoryFilter = ref('ALL')
 const equipmentAffixFilter = ref('ALL')
 const equipmentLevelFilter = ref('ALL')
+const equipmentPendingRefineTier = ref(0)
 const statDetailTrackIndex = ref(null)
 
 const isStatDetailVisible = computed({
@@ -851,6 +852,7 @@ function openEquipmentSelector(index, slotKey) {
   equipmentCategoryFilter.value = 'ALL'
   equipmentAffixFilter.value = 'ALL'
   equipmentLevelFilter.value = 'ALL'
+  equipmentPendingRefineTier.value = getEquipmentTierForTrack(store.tracks[index], slotKey)
   isEquipmentSelectorVisible.value = true
 }
 
@@ -859,6 +861,13 @@ function confirmEquipmentSelection(equipmentId) {
     const track = store.tracks[equipmentTargetIndex.value]
     if (track && track.id) {
       store.updateTrackEquipment(track.id, equipmentSlotKey.value, equipmentId)
+      if (equipmentId) {
+        store.updateTrackEquipmentTier(
+            track.id,
+            equipmentSlotKey.value,
+            equipmentPendingRefineTier.value,
+        )
+      }
     }
   }
   isEquipmentSelectorVisible.value = false
@@ -871,6 +880,7 @@ function removeEquipment() {
       store.updateTrackEquipment(track.id, equipmentSlotKey.value, null)
     }
   }
+  equipmentPendingRefineTier.value = 0
   isEquipmentSelectorVisible.value = false
 }
 
@@ -1126,19 +1136,19 @@ const currentEquipmentForDialog = computed(() => {
 })
 
 const currentEquipmentTierForDialog = computed(() => {
-  if (equipmentTargetIndex.value === null) return 0
-  const track = store.tracks[equipmentTargetIndex.value]
-  if (!track) return 0
-  return getEquipmentTierForTrack(track, equipmentSlotKey.value)
+  return equipmentPendingRefineTier.value
 })
 
 function setCurrentEquipmentTierForDialog(tier) {
+  const nextTier = Math.max(0, Math.min(3, Number(tier) || 0))
+  equipmentPendingRefineTier.value = nextTier
   if (equipmentTargetIndex.value === null) return
   const track = store.tracks[equipmentTargetIndex.value]
   if (!track?.id) return
-  store.updateTrackEquipmentTier(track.id, equipmentSlotKey.value, tier)
-}
+  if (!currentEquipmentForDialog.value) return
 
+  store.updateTrackEquipmentTier(track.id, equipmentSlotKey.value, nextTier)
+}
 function getEquipmentLevelColor(level) {
   const key = Number(level)
   return EQUIPMENT_LEVEL_COLORS[key] || '#888'
