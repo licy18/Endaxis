@@ -18,7 +18,7 @@ import { useI18n } from 'vue-i18n'
 import { snapMs } from '@/utils/precision.js'
 import { frameToTime, snapTimeToFrame, timeToFrame } from '@/utils/time.js'
 import { toLegacyDisplayType } from '@/utils/hitModel.js'
-import { getGearPiece, getEnemy } from '@/data'
+import { getGearPiece, getEnemy, getOperator } from '@/data'
 import {
   getGameElementName,
   getGameAttributeName,
@@ -375,13 +375,14 @@ function openStatDetail(index) {
   statDetailTrackIndex.value = index
 }
 
-const EQUIPMENT_LEVELS = [70, 50, 36, 20, 10]
+const EQUIPMENT_LEVELS = [70, 50, 36, 28, 20, 10]
 const EQUIPMENT_LEVEL_COLORS = {
   70: '#ffd700',
   50: '#b37feb',
   36: '#4a90e2',
+  28: '#73c94f',
   20: '#95de64',
-  10: '#888888'
+  10: '#888888',
 }
 const EQUIPMENT_AFFIX_FILTER_GROUPS = [
   {
@@ -518,6 +519,100 @@ function normalizeEquipmentAttributeId(attribute) {
   if (attribute === 'sub') return 'secondary_ability'
   if (['strength', 'agility', 'intellect', 'will'].includes(attribute)) return attribute
   return ''
+}
+
+function isEquipmentAttributeStat(stat) {
+  return stat?.modifier === 'attributeFlat' || stat?.modifier === 'attributePercent'
+}
+
+function getEquipmentDialogOperator(track) {
+  if (!track?.id) return null
+  return getOperator(track.id) || null
+}
+
+const CORE_ATTRIBUTES = new Set(['strength', 'agility', 'intellect', 'will'])
+
+function getEquipmentAbilityMatch(eq, operator) {
+  const piece = getGearPiece(eq?.canonicalId || eq?.canonicalGearPieceId || eq?.id)
+
+  if (!piece || !operator) {
+    return {
+      matched: false,
+      primaryMatched: false,
+      secondaryMatched: false,
+      attributeLineCount: 0,
+      unmatchedAttributeLineCount: 0,
+      type: '',
+    }
+  }
+
+  const mainAttribute =
+      operator?.mainAttribute
+      || operator?.primaryAbility
+      || operator?.primaryAttribute
+      || ''
+
+  const subAttribute =
+      operator?.subAttribute
+      || operator?.secondaryAbility
+      || operator?.secondaryAttribute
+      || ''
+
+  let primaryMatched = false
+  let secondaryMatched = false
+  let attributeLineCount = 0
+  let unmatchedAttributeLineCount = 0
+
+  const skills = [piece.skill1, piece.skill2, piece.skill3].filter(Boolean)
+
+  for (const skill of skills) {
+    const effects = Array.isArray(skill?.effects) ? skill.effects : []
+
+    const visibleEffects = mergeEquipmentElementPairEffects(effects)
+        .filter(effect => effect?.kind === 'status')
+
+    for (const effect of visibleEffects) {
+      const stat = effect?.stat
+      if (!isEquipmentAttributeStat(stat)) continue
+
+      const attrs = normalizeEquipmentStatArray(stat.attribute)
+          .filter(attr => CORE_ATTRIBUTES.has(attr))
+
+      if (attrs.length === 0) continue
+
+      attributeLineCount += 1
+
+      const matchedPrimary = Boolean(mainAttribute && attrs.includes(mainAttribute))
+      const matchedSecondary = Boolean(subAttribute && attrs.includes(subAttribute))
+
+      if (matchedPrimary) primaryMatched = true
+      if (matchedSecondary) secondaryMatched = true
+
+      if (!matchedPrimary && !matchedSecondary) {
+        unmatchedAttributeLineCount += 1
+      }
+    }
+  }
+
+  const allAttributeLinesMatched =
+      attributeLineCount > 0
+      && unmatchedAttributeLineCount === 0
+
+  const strongMatch =
+      allAttributeLinesMatched
+      && (
+          (primaryMatched && secondaryMatched)
+          || (attributeLineCount === 1 && primaryMatched)
+      )
+
+  return {
+    matched: strongMatch,
+    primaryMatched,
+    secondaryMatched,
+    attributeLineCount,
+    unmatchedAttributeLineCount,
+    type: strongMatch ? 'both' : '',
+  }
 }
 
 function sameEquipmentValue(a, b) {
@@ -1086,6 +1181,8 @@ const equipmentCandidates = computed(() => {
   const track = store.tracks[equipmentTargetIndex.value]
   if (!track || !track.id) return []
 
+  const operator = getEquipmentDialogOperator(track)
+
   let list = equipmentSelectorItems.value
   list = list.filter(e => e.slot === equipmentSlotType.value)
 
@@ -1112,11 +1209,16 @@ const equipmentCandidates = computed(() => {
     list = list.filter(e => e.searchTerms.some(term => term.includes(q)))
   }
 
-  return [...list].sort((a, b) => {
-    const lvDiff = (Number(b.level) || 0) - (Number(a.level) || 0)
-    if (lvDiff !== 0) return lvDiff
-    return (a.name || '').localeCompare(b.name || '')
-  })
+  return [...list]
+    .map(eq => ({
+      ...eq,
+      abilityMatch: getEquipmentAbilityMatch(eq, operator),
+    }))
+    .sort((a, b) => {
+      const lvDiff = (Number(b.level) || 0) - (Number(a.level) || 0)
+      if (lvDiff !== 0) return lvDiff
+      return (a.name || '').localeCompare(b.name || '')
+    })
 })
 
 const equipmentRosterByLevel = computed(() => {
@@ -3121,7 +3223,11 @@ onUnmounted(() => {
             <div class="rarity-line"></div>
           </div>
           <div class="roster-grid">
-            <div v-for="eq in group.list" :key="eq.id" class="roster-card" @click="confirmEquipmentSelection(eq.id)">
+            <div
+                v-for="eq in group.list"
+                :key="eq.id"
+                class="roster-card equipment-roster-card"
+                :class="{ 'is-ability-match-both': eq.abilityMatch?.type === 'both', }" @click="confirmEquipmentSelection(eq.id)">
               <el-tooltip
                 placement="top-start"
                 effect="dark"
@@ -3150,7 +3256,9 @@ onUnmounted(() => {
                     </div>
                   </div>
                 </template>
-                <div class="card-avatar-wrapper" :style="{ borderColor: getEquipmentLevelColor(eq.level) }">
+                <div
+                    class="card-avatar-wrapper"
+                    :class="{ 'is-ability-match-both': eq.abilityMatch?.type === 'both',}" :style="{ borderColor: getEquipmentLevelColor(eq.level) }">
                   <div class="eq-affix-icon-stack">
                     <div
                       v-for="icon in getEquipmentPrimaryAffixIconStack(eq)"
@@ -4751,6 +4859,14 @@ body.capture-mode .davinci-range {
   padding: 2px;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.equipment-roster-card .card-avatar-wrapper.is-ability-match-both {
+  border-color: #ffd700 !important;
+  box-shadow:
+      0 0 0 2px rgba(255, 215, 0, 0.95),
+      0 0 18px rgba(255, 215, 0, 0.55),
+      inset 0 0 10px rgba(255, 215, 0, 0.2);
 }
 
 .card-avatar-wrapper > img {
