@@ -3,6 +3,7 @@
  * Used by both HitHandler and TriggerRegistry.
  */
 import type {
+  Attribute,
   Effect,
   EffectCondition,
   EnemyStat,
@@ -33,6 +34,8 @@ import { resolveEffectDefaults, resolveEffectLifecycle } from '@/data/effectPres
 import type { ActorStats } from '@/simulation/compiler/types';
 import { computeScalingBasis } from '@/data/stats';
 import { computeStats } from '@/data/stats/computeStats';
+import { resolveStatAttributes } from '@/data/collect';
+import { ATTR_MAP } from '@/data/stats/baseValues';
 import type { ResolvedStatModifier, Attributes } from '@/data/stats/types';
 
 /** Find an enemy status entry by base id, considering @instanceKey suffix from scheduleDotTicks. */
@@ -790,6 +793,7 @@ export function dispatchEnemyEffects(
               ? { consumedStacks: ctx.getAction(actionId)?.consumedStacks }
               : {}),
             ...(resolved.silent ? { silent: true } : {}),
+            ...(resolved.external ? { external: true } : {}),
           } as EnemyEffectApplyEvent,
           0,
         );
@@ -1324,13 +1328,21 @@ export function dispatchSingleActorEffect(
       );
 
     for (const targetId of targets) {
+      // Resolve 'main'/'sub' attribute placeholders against the *target* operator (team-scoped
+      // effects spread to multiple operators with differing main/sub attributes).
+      const targetBase = ctx.getBaseStats(targetId);
+      const targetStat = resolveStatAttributes(
+        resolved.stat,
+        targetBase ? (ATTR_MAP[targetBase.mainAttributeName] as Attribute) : undefined,
+        targetBase ? (ATTR_MAP[targetBase.secondaryAttributeName] as Attribute) : undefined,
+      );
       ctx.queue.enqueue(
         {
           type: 'OPERATOR_EFFECT_APPLY',
           time,
           targetTrackId: targetId,
           id: effectId,
-          stat: resolved.stat,
+          stat: targetStat,
           value,
           stacks,
           maxStacks,
@@ -1347,6 +1359,7 @@ export function dispatchSingleActorEffect(
             ? { consumedStacks: ctx.getAction(actionId)?.consumedStacks }
             : {}),
           ...(resolved.silent ? { silent: true } : {}),
+          ...(resolved.external ? { external: true } : {}),
         },
         0,
       );

@@ -25,6 +25,8 @@ export interface EnemyStatusEntry {
   sourceBreakdown?: Record<string, number>;
   /** When set, pending events with this key are cancelled on expire/consume (used by DoT effects). */
   cancelHitKey?: string;
+  /** Standalone-multiplicative damage-taken modifier (e.g. Wrap): routed to the external factor. */
+  external?: boolean;
 }
 
 // ─── Source tracking for LMDI attribution ───────────────────────────────────
@@ -110,6 +112,7 @@ export interface OperatorStatusEntry {
   effect?: Effect;
   /** Snapshotted consumed stacks from the action that applied this effect. */
   consumedStacks?: Record<string, number>;
+  external?: boolean;
 }
 
 // ─── Engine events: enemy side ───────────────────────────────────────────────
@@ -160,6 +163,8 @@ export type EnemyEffectApplyEvent = {
       sourceBreakdown?: Record<string, number>;
       /** When true, applying this effect does not fire onStatusApplied triggers. */
       silent?: boolean;
+      /** Standalone-multiplicative damage-taken modifier (Wrap); carried onto the entry. */
+      external?: boolean;
     }
 );
 
@@ -332,6 +337,8 @@ export interface OperatorEffectApplyEvent {
   /** When true, applying this effect does not fire onStatusApplied triggers. */
   silent?: boolean;
   skipStatusAppliedTrigger?: boolean;
+  /** See StatusEffect.external — applied as an independent final attribute multiplier. */
+  external?: boolean;
 }
 
 /** Expire event for operator StatusEffects. consumed=true means priority-3 forced consume. */

@@ -27,6 +27,7 @@ export interface InitialEffect {
   consumedStacks?: Record<string, number>;
   skillTypes?: any;
   skillId?: any;
+  external?: boolean;
 }
 
 interface SimulationOptions {
@@ -402,6 +403,7 @@ export function simulate(
       consumedStacks: effect.consumedStacks,
       silent: !hasFiniteDuration,
       skipStatusAppliedTrigger: hasFiniteDuration,
+      external: effect.external,
     });
   });
 

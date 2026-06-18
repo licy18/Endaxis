@@ -26,7 +26,8 @@ export type EnemyStat =
   | { modifier: 'increasedDmgTaken'; elements?: DamageElement | DamageElement[] }
   | { modifier: 'resistanceShred'; elements?: DamageElement | DamageElement[] }
   | { modifier: 'slowed' }
-  | { modifier: 'weaken' };
+  | { modifier: 'weaken' }
+  | { modifier: 'inflictionBarrier'; elements?: DamageElement | DamageElement[] };
 
 /** Stats that buff the operator (self/team). */
 export type OperatorStat =
@@ -90,7 +91,9 @@ export type OperatorStat =
   // ── Dual-scoped (skill type + element, both optional) ─────────────────────
   | {
       modifier: 'dmgBonus';
-      skillTypes?: SkillType | SkillType[];
+      /** `'nonSkill'` scopes to damage with no combat-skill-type attribution — reactions, burn-DoT,
+       *  and talent/gear/weapon-triggered hits; mutually exclusive with skill-type scoping. */
+      skillTypes?: SkillType | SkillType[] | 'nonSkill';
       skillId?: string | string[];
       elements?: DamageElement | DamageElement[];
     }
@@ -323,6 +326,13 @@ export interface StatusEffect extends EffectBase {
   scaling?: ScalingDef;
   /** When true, applying this effect does not fire onStatusApplied triggers. */
   silent?: boolean;
+  /**
+   * When true on an attribute modifier (`attributePercent`), the value is applied as an
+   * independent final multiplier on the attribute instead of being summed into the additive
+   * percent pool — i.e. `attr × (1 + Σpct) × (1 + value/100)` rather than `(1 + Σpct + value/100)`.
+   * Also routes `dmgBonus`/`increasedDmgTaken`/`cooldownReductionPercent` to standalone multiplicative factors.
+   */
+  external?: boolean;
 }
 
 /** Always targets the enemy — no target field needed. */
@@ -639,6 +649,7 @@ export interface ResolvedStatusEffect extends ResolvedEffectBase {
   value?: number;
   scaling?: ResolvedScalingDef;
   silent?: boolean;
+  external?: boolean;
 }
 
 export interface ResolvedInflictionEffect extends ResolvedEffectBase {

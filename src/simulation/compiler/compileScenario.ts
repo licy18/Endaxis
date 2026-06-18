@@ -40,6 +40,7 @@ function resolveEffectiveCooldown(
   const stats = track.stats || ({} as ActorStats);
   let reductionPercent = 0;
   let reductionFlat = 0;
+  let externalMult = 1;
 
   if (isComboSkillLikeAction(action)) {
     reductionPercent = Math.max(
@@ -49,14 +50,16 @@ function resolveEffectiveCooldown(
         clampPercent(systemConstants?.linkCdReduction),
     );
     reductionFlat = Math.max(0, Number((stats as any).combo_cd_reduction_flat) || 0);
+    externalMult = Math.max(0, Number((stats as any).combo_cd_external_mult ?? 1) || 1);
   } else if (isUltimateLikeAction(action)) {
     reductionPercent = clampPercent((stats as any).ult_cd_reduction);
     reductionFlat = Math.max(0, Number((stats as any).ult_cd_reduction_flat) || 0);
+    externalMult = Math.max(0, Number((stats as any).ult_cd_external_mult ?? 1) || 1);
   }
 
   const cooldown = Math.max(
       0,
-      (baseCooldown - reductionFlat) * (1 - reductionPercent / 100),
+      (baseCooldown - reductionFlat) * (1 - reductionPercent / 100) * externalMult,
   );
 
   return {

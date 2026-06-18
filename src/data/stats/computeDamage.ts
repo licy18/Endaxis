@@ -48,6 +48,7 @@ function matchesSkillType(
   skillType: string | undefined,
 ): boolean {
   if (!filter) return true;
+  if (filter === 'nonSkill') return skillType == null;
   if (!skillType) return false;
   const types = Array.isArray(filter) ? filter : [filter];
   // basicAttack scope matches basicAttack, finalStrike, and dive
@@ -67,6 +68,7 @@ function matchesSkillId(
 
 interface FilteredModifiers {
   dmgBonus: number;
+  dmgBonusExternalMult: number;
   ampBonus: number;
   directMultiplier: number;
   resistanceIgnore: number;
@@ -83,6 +85,7 @@ export function filterDamageModifiers(
   skillId: string | undefined,
 ): FilteredModifiers {
   let dmgBonus = 0;
+  let dmgBonusExternalMult = 1;
   let ampBonus = 0;
   let directMultiplier = 1;
   let resistanceIgnore = 0;
@@ -95,7 +98,11 @@ export function filterDamageModifiers(
 
     switch (mod.modifier) {
       case 'dmgBonus':
-        dmgBonus += mod.value;
+        if (mod.external) {
+          dmgBonusExternalMult *= Math.max(0, 1 + mod.value);
+        } else {
+          dmgBonus += mod.value;
+        }
         break;
       case 'ampBonus':
         ampBonus += mod.value;
@@ -112,7 +119,14 @@ export function filterDamageModifiers(
     }
   }
 
-  return { dmgBonus, ampBonus, directMultiplier, resistanceIgnore, susceptibilityAmplify };
+  return {
+    dmgBonus,
+    dmgBonusExternalMult,
+    ampBonus,
+    directMultiplier,
+    resistanceIgnore,
+    susceptibilityAmplify,
+  };
 }
 
 // ─── Consumed stat effect application ───────────────────────────────────────
@@ -122,6 +136,7 @@ interface MutableDamageStats {
   critRate: number;
   critDmg: number;
   dmgBonus: number;
+  dmgBonusExternalMult: number;
   ampBonus: number;
   directMultiplier: number;
   resistanceIgnore: number;
@@ -226,6 +241,7 @@ interface HitDamageParams {
   critRate: number; // decimal
   critDmg: number; // decimal
   dmgBonus: number; // decimal
+  dmgBonusExternalMult: number; // standalone multiplicative factor (Π(1 + external dmgBonus))
   ampBonus: number; // decimal
   directMultiplier: number; // pre-computed product
   enemyDef: number;
@@ -234,6 +250,7 @@ interface HitDamageParams {
   enemyResistance?: number; // decimal resistance points, e.g. 0.2 = 20 resistance = 80% damage
   susceptibility: number; // decimal
   increasedDmgTaken: number; // decimal
+  dmgTakenExternalMult: number; // standalone multiplicative damage-taken factor (Π(1 + external), e.g. Wrap)
   linkStacks: number;
   staggerMult: number; // 1.3 when enemy is staggered, 1 otherwise
   finisherMult: number; // tier-based multiplier for finisher actions against staggered enemies
@@ -249,6 +266,7 @@ export interface DamageBreakdown {
   base: number;
   dmgBonus: number;
   dmgBonusMult: number;
+  dmgBonusExternalMult: number;
   critRate: number;
   critDmg: number;
   critMult: number;
@@ -259,6 +277,7 @@ export interface DamageBreakdown {
   susceptMult: number;
   increasedDmgTaken: number;
   dmgTakenMult: number;
+  dmgTakenExternalMult: number;
   linkStacks: number;
   linkMult: number;
   enemyDef: number;
@@ -295,6 +314,7 @@ export function computeExpectedDamageWithBreakdown(
   const ampMult = 1 + p.ampBonus;
   const susceptMult = 1 + p.susceptibility;
   const dmgTakenMult = 1 + p.increasedDmgTaken;
+  const dmgTakenExternalMult = p.dmgTakenExternalMult ?? 1;
   const link = linkMultiplier(p.linkStacks, p.skillType);
   const def = Math.max(p.enemyDef, 100);
   const defMult = 100 / (def + 100);
@@ -306,10 +326,12 @@ export function computeExpectedDamageWithBreakdown(
   const shared =
     base *
     dmgBonusMult *
+    p.dmgBonusExternalMult *
     ampMult *
     p.directMultiplier *
     susceptMult *
     dmgTakenMult *
+    dmgTakenExternalMult *
     link *
     defMult *
     resMult *
@@ -324,6 +346,7 @@ export function computeExpectedDamageWithBreakdown(
     base,
     dmgBonus: p.dmgBonus,
     dmgBonusMult,
+    dmgBonusExternalMult: p.dmgBonusExternalMult,
     critRate,
     critDmg: p.critDmg,
     critMult,
@@ -334,6 +357,7 @@ export function computeExpectedDamageWithBreakdown(
     susceptMult,
     increasedDmgTaken: p.increasedDmgTaken,
     dmgTakenMult,
+    dmgTakenExternalMult,
     linkStacks: p.linkStacks,
     linkMult: link,
     enemyDef: p.enemyDef,
@@ -395,6 +419,9 @@ export function computeHitDamageWithBreakdown(
       : 0;
   const totalSusc =
     ((enemyStatus?.susceptibility ?? 0) + elementalSusc) * stats.susceptibilityAmplify;
+  const dmgTakenExternalMult =
+    (enemyStatus?.increasedDmgTakenExternalMult ?? 1) *
+    (element ? (enemyStatus?.elementalIncreasedDmgTakenExternalMult?.[element] ?? 1) : 1);
 
   return computeExpectedDamageWithBreakdown(
     {
@@ -404,6 +431,7 @@ export function computeHitDamageWithBreakdown(
       critRate: stats.critRate,
       critDmg: stats.critDmg,
       dmgBonus: stats.dmgBonus,
+      dmgBonusExternalMult: stats.dmgBonusExternalMult,
       ampBonus: stats.ampBonus,
       directMultiplier: stats.directMultiplier,
       enemyDef,
@@ -412,6 +440,7 @@ export function computeHitDamageWithBreakdown(
       enemyResistance,
       susceptibility: totalSusc,
       increasedDmgTaken: (enemyStatus?.increasedDmgTaken ?? 0) + elementalDmgTaken,
+      dmgTakenExternalMult,
       linkStacks: hit.consumedStacks?.link ?? 0,
       staggerMult,
       finisherMult,

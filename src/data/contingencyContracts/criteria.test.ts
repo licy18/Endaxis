@@ -1,0 +1,515 @@
+import { describe, it, expect } from 'vitest';
+import { CRITERION_MECHANISMS } from '@/data/contingencyContracts/criteriaEffects';
+import { computeStats } from '@/data/stats/computeStats';
+import {
+  filterDamageModifiers,
+  computeExpectedDamageWithBreakdown,
+} from '@/data/stats/computeDamage';
+import { computeEnemyStats } from '@/data/stats/computeEnemyStats';
+import { resolveStatAttributes } from '@/data/collect';
+import type {
+  BaseStatValues,
+  ResolvedStatModifier,
+  SheetStatEffect,
+  ScopedDamageModifier,
+} from '@/data/stats/types';
+import { EnemyState } from '@/simulation/state/EnemyState';
+
+// ─── Shared fixtures ─────────────────────────────────────────────────────────
+
+function makeBase(): BaseStatValues {
+  return {
+    level: 80,
+    baseAtk: 1000,
+    baseHp: 5000,
+    weaponAtk: 0,
+    baseAttrs: { strength: 1000, agility: 0, intellect: 0, will: 0 },
+    mainAttributeName: 'strength',
+    secondaryAttributeName: 'intellect',
+  };
+}
+
+function makeEnemy(): EnemyState {
+  // hasInflictionBarrier / applyStatus don't touch the engine.
+  return new EnemyState(
+    { maxStagger: 100, staggerNodeCount: 0, staggerNodeDuration: 2, staggerBreakDuration: 10 } as any,
+    {} as any,
+  );
+}
+
+/** Base HitDamageParams (neutral factors) for the damage-formula tests. */
+function dmgBase() {
+  return {
+    attack: 1000,
+    multiplier: 200, // chosen so results are integers (no rounding noise)
+    critRate: 0,
+    critDmg: 0,
+    dmgBonus: 0,
+    dmgBonusExternalMult: 1,
+    ampBonus: 0,
+    directMultiplier: 1,
+    enemyDef: 100,
+    resistanceIgnore: 0,
+    resistanceShred: 0,
+    susceptibility: 0,
+    increasedDmgTaken: 0,
+    dmgTakenExternalMult: 1,
+    linkStacks: 0,
+    staggerMult: 1,
+    finisherMult: 1,
+  };
+}
+
+// ─── external mechanism (attributePercent) — Weaken/Strangle/Bent Edges ──────
+
+describe('external attributePercent (final multiplier)', () => {
+  it('applies external as an independent final multiplier on the sheet path', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: 20 },
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: -40, external: true },
+    ];
+    const status = computeStats(makeBase(), sheet, []);
+    // base 1000 × (1 + 0.20) × (1 - 0.40) = 720, NOT the additive (1 + 0.20 - 0.40) = 800
+    expect(status.attributes.strength).toBe(720);
+  });
+
+  it('applies external as an independent final multiplier on the dynamic (sim) path', () => {
+    const dynamic: ResolvedStatModifier[] = [
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: 20 },
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: -40, external: true },
+    ];
+    const status = computeStats(makeBase(), [], dynamic);
+    expect(status.attributes.strength).toBe(720);
+  });
+
+  it('without external, the same values pool additively', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: 20 },
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: -40 },
+    ];
+    const status = computeStats(makeBase(), sheet, []);
+    expect(status.attributes.strength).toBe(800);
+  });
+
+  it('stacks multiple external multipliers multiplicatively', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: -10, external: true },
+      { stat: { modifier: 'attributePercent', attribute: 'strength' }, value: -40, external: true },
+    ];
+    const status = computeStats(makeBase(), sheet, []);
+    expect(status.attributes.strength).toBe(540); // 1000 × 0.90 × 0.60
+  });
+});
+
+describe('resolveStatAttributes (per-target main/sub resolution)', () => {
+  it("resolves 'main'/'sub' to the target operator's attributes", () => {
+    expect(
+      resolveStatAttributes({ modifier: 'attributePercent', attribute: 'main' }, 'strength', 'intellect'),
+    ).toEqual({ modifier: 'attributePercent', attribute: 'strength' });
+    expect(
+      resolveStatAttributes({ modifier: 'attributePercent', attribute: 'sub' }, 'strength', 'intellect'),
+    ).toEqual({ modifier: 'attributePercent', attribute: 'intellect' });
+  });
+
+  it('resolves the same team effect differently per operator (mixed-main team)', () => {
+    const teamEffect = { modifier: 'attributePercent', attribute: 'main' } as const;
+    expect((resolveStatAttributes(teamEffect, 'strength', 'will') as any).attribute).toBe('strength');
+    expect((resolveStatAttributes(teamEffect, 'intellect', 'agility') as any).attribute).toBe('intellect');
+  });
+
+  it('leaves concrete attributes and non-attribute stats untouched (same reference)', () => {
+    const concrete = { modifier: 'attributePercent', attribute: 'agility' } as const;
+    expect(resolveStatAttributes(concrete, 'strength', 'intellect')).toBe(concrete);
+    const noAttr = { modifier: 'atkPercent' } as const;
+    expect(resolveStatAttributes(noAttr, 'strength', 'intellect')).toBe(noAttr);
+    expect(resolveStatAttributes(undefined, 'strength', 'intellect')).toBeUndefined();
+  });
+
+  it('resolves placeholders inside an attribute array', () => {
+    expect(
+      resolveStatAttributes(
+        { modifier: 'attributePercent', attribute: ['main', 'will'] },
+        'strength',
+        'intellect',
+      ),
+    ).toEqual({ modifier: 'attributePercent', attribute: ['strength', 'will'] });
+  });
+});
+
+describe('external dmgBonus (standalone multiplicative damage factor)', () => {
+  it('filterDamageModifiers splits external dmgBonus into its own multiplicative factor', () => {
+    const mods: ScopedDamageModifier[] = [
+      { modifier: 'dmgBonus', value: 1.5 },
+      { modifier: 'dmgBonus', value: -0.45, external: true },
+      { modifier: 'dmgBonus', value: -0.1, external: true },
+    ];
+    const f = filterDamageModifiers(mods, undefined, undefined, undefined);
+    expect(f.dmgBonus).toBeCloseTo(1.5, 10);
+    expect(f.dmgBonusExternalMult).toBeCloseTo(0.55 * 0.9, 10);
+  });
+
+  it('clamps a stacked external dmgBonus debuff at 0 (no negative factor)', () => {
+    const f = filterDamageModifiers(
+      [{ modifier: 'dmgBonus', value: -1.5, external: true }],
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(f.dmgBonusExternalMult).toBe(0);
+    const dmg = computeExpectedDamageWithBreakdown({ ...dmgBase(), dmgBonusExternalMult: f.dmgBonusExternalMult });
+    expect(dmg.expectedDamage).toBe(0);
+  });
+
+  it('applies dmgBonusExternalMult as a standalone factor in the damage formula', () => {
+    const base = { ...dmgBase(), dmgBonus: 1.5 };
+    const withExternal = computeExpectedDamageWithBreakdown({ ...base, dmgBonusExternalMult: 0.55 });
+    const noExternal = computeExpectedDamageWithBreakdown({ ...base, dmgBonusExternalMult: 1 });
+    expect(withExternal.expectedDamage).toBeCloseTo(noExternal.expectedDamage * 0.55, 6);
+    const additiveWrong = computeExpectedDamageWithBreakdown({ ...base, dmgBonus: 1.05, dmgBonusExternalMult: 1 });
+    expect(withExternal.expectedDamage).not.toBeCloseTo(additiveWrong.expectedDamage, 6);
+  });
+});
+
+// ─── 队列：扼制 (Strangle) — group 1009 ────────────────────────────────────────
+
+describe('Strangle (group 1009) mechanism data', () => {
+  const strangle = CRITERION_MECHANISMS[1009]!;
+
+  it('exists with 5 triggers covering vulnerability + the 4 inflictions', () => {
+    expect(strangle).toBeDefined();
+    expect(strangle.triggers).toHaveLength(5);
+    const statuses = strangle.triggers!.map(t => (t.trigger as any).status);
+    expect(new Set(statuses)).toEqual(
+      new Set(['vulnerability', 'heatInfliction', 'cryoInfliction', 'electricInfliction', 'natureInfliction']),
+    );
+  });
+
+  it('maps each status to a self external dmgBonus debuff on the matching damage type', () => {
+    const expected: Record<string, string> = {
+      vulnerability: 'physical',
+      heatInfliction: 'heat',
+      cryoInfliction: 'cryo',
+      electricInfliction: 'electric',
+      natureInfliction: 'nature',
+    };
+    for (const te of strangle.triggers!) {
+      const trig = te.trigger as any;
+      expect(trig.kind).toBe('onStatusApplied');
+      expect(trig.target).toBe('enemy');
+      expect(trig.triggerScope).toBe('global');
+      expect(te.effects).toHaveLength(1);
+      const eff = te.effects[0] as any;
+      expect(eff.kind).toBe('status');
+      expect(eff.target).toBe('self');
+      expect(eff.value).toEqual([-45, -90]);
+      expect(eff.duration).toBe(10);
+      expect(eff.external).toBe(true);
+      expect(eff.stat.modifier).toBe('dmgBonus');
+      expect(eff.stat.elements).toEqual([expected[trig.status]]);
+    }
+  });
+});
+
+// ─── 队列：折刃 (Bent Edges) — group 1005 ──────────────────────────────────────
+
+describe('Bent Edges (group 1005) mechanism data', () => {
+  const bentEdges = CRITERION_MECHANISMS[1005]!;
+
+  it('has one onActionStart(ultimate) global trigger with debuff + counter effects', () => {
+    expect(bentEdges.triggers).toHaveLength(1);
+    const trig = bentEdges.triggers![0]!.trigger as any;
+    expect(trig.kind).toBe('onActionStart');
+    expect(trig.skillTypes).toBe('ultimate');
+    expect(trig.triggerScope).toBe('global');
+    expect(bentEdges.triggers![0]!.effects).toHaveLength(2);
+  });
+
+  it('debuff: self external dmgBonus on ultimate, scaled by the prior-cast counter', () => {
+    const debuff = bentEdges.triggers![0]!.effects[0] as any;
+    expect(debuff.target).toBe('self');
+    expect(debuff.external).toBe(true);
+    expect(debuff.value).toBe(0);
+    expect(debuff.stackStrategy).toBe('REPLACE');
+    expect(debuff.duration).toBe(Infinity);
+    expect(debuff.stat).toEqual({ modifier: 'dmgBonus', skillTypes: 'ultimate' });
+    expect(debuff.scaling.additive).toEqual([
+      { key: 'bent-edges-count', target: 'self', coefficient: [-50, -100] },
+    ]);
+  });
+
+  it('counter: pure-state self counter accumulating one stack per cast', () => {
+    const counter = bentEdges.triggers![0]!.effects[1] as any;
+    expect(counter.id).toBe('bent-edges-count');
+    expect(counter.target).toBe('self');
+    expect(counter.stacks).toBe(1);
+    expect(counter.stackStrategy).toBe('REFRESH_DURATION');
+    expect(counter.duration).toBe(Infinity);
+    expect(counter.stat).toBeUndefined();
+  });
+});
+
+// ─── 改写：屏障 (Effect Barrier) — group 1010 ──────────────────────────────────
+
+describe('EnemyState.hasInflictionBarrier', () => {
+  it('matches the barred element while active, ignores others and expiry', () => {
+    const enemy = makeEnemy();
+    enemy.applyStatus({
+      id: 'inflictionBarrier-heat',
+      stat: { modifier: 'inflictionBarrier', elements: 'heat' },
+      value: 0,
+      stacks: 1,
+      maxStacks: 1,
+      expiresAt: 5,
+      sourceId: 't0',
+    } as any);
+    expect(enemy.hasInflictionBarrier('heat', 1)).toBe(true);
+    expect(enemy.hasInflictionBarrier('cryo', 1)).toBe(false);
+    expect(enemy.hasInflictionBarrier('heat', 6)).toBe(false);
+  });
+
+  it('returns false with no barrier present', () => {
+    expect(makeEnemy().hasInflictionBarrier('heat', 0)).toBe(false);
+  });
+});
+
+describe('Effect Barrier (group 1010) mechanism data', () => {
+  const barrier = CRITERION_MECHANISMS[1010]!;
+
+  it('has 5 onStatusApplied/enemy/global triggers applying per-type inflictionBarrier markers', () => {
+    expect(barrier.triggers).toHaveLength(5);
+    const expected: Record<string, string> = {
+      vulnerability: 'physical',
+      heatInfliction: 'heat',
+      cryoInfliction: 'cryo',
+      electricInfliction: 'electric',
+      natureInfliction: 'nature',
+    };
+    for (const te of barrier.triggers!) {
+      const trig = te.trigger as any;
+      expect(trig.kind).toBe('onStatusApplied');
+      expect(trig.target).toBe('enemy');
+      expect(trig.triggerScope).toBe('global');
+      const eff = te.effects[0] as any;
+      expect(eff.target).toBe('enemy');
+      expect(eff.duration).toBe(5);
+      expect(eff.silent).toBe(true);
+      expect(eff.stat.modifier).toBe('inflictionBarrier');
+      expect(eff.stat.elements).toBe(expected[trig.status]);
+    }
+  });
+});
+
+// ─── 队列：脱力 (Poor Basics) — group 1008 ─────────────────────────────────────
+
+describe('Poor Basics (group 1008) mechanism data', () => {
+  it('applies a team-wide -70% basic-attack dmgBonus debuff (additive, not external)', () => {
+    const eff = CRITERION_MECHANISMS[1008]!.effects![0] as any;
+    expect(eff.target).toBe('team');
+    expect(eff.value).toBe(-70);
+    expect(eff.external).toBeUndefined();
+    expect(eff.stat.modifier).toBe('dmgBonus');
+    expect(eff.stat.skillTypes).toBe('basicAttack');
+  });
+});
+
+// ─── 环境：过速 (Overclock) — group 1000 ───────────────────────────────────────
+
+describe('external cooldownReductionPercent (standalone multiplicative)', () => {
+  it('routes an external comboSkill CD reduction into the multiplicative bucket, not the additive one', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'cooldownReductionPercent', skillTypes: 'comboSkill' }, value: 60, external: true },
+    ];
+    const combo = computeStats(makeBase(), sheet, [], 'comboSkill');
+    expect(combo.comboCdExternalMult).toBeCloseTo(0.4, 10);
+    expect(combo.comboCdReductionPercent).toBe(0);
+    const ult = computeStats(makeBase(), sheet, [], 'ultimate');
+    expect(ult.ultCdExternalMult).toBe(1);
+    expect(ult.ultCdReductionPercent).toBe(0);
+  });
+
+  it('stacks multiple external CD reductions multiplicatively', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'cooldownReductionPercent', skillTypes: 'comboSkill' }, value: 60, external: true },
+      { stat: { modifier: 'cooldownReductionPercent', skillTypes: 'comboSkill' }, value: 50, external: true },
+    ];
+    const combo = computeStats(makeBase(), sheet, [], 'comboSkill');
+    expect(combo.comboCdExternalMult).toBeCloseTo(0.2, 10);
+    expect(combo.comboCdReductionPercent).toBe(0);
+  });
+
+  it('without external, the same value pools additively (regression)', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'cooldownReductionPercent', skillTypes: 'comboSkill' }, value: 60 },
+    ];
+    const combo = computeStats(makeBase(), sheet, [], 'comboSkill');
+    expect(combo.comboCdReductionPercent).toBe(60);
+    expect(combo.comboCdExternalMult).toBe(1);
+  });
+});
+
+describe('Overclock (group 1000) mechanism data', () => {
+  const overclock = CRITERION_MECHANISMS[1000]!;
+
+  it('has an external combo-skill CD reduction and an additive battle-skill dmgBonus debuff', () => {
+    expect(overclock.effects).toHaveLength(2);
+    const cd = overclock.effects!.find((e: any) => e.stat.modifier === 'cooldownReductionPercent') as any;
+    expect(cd.target).toBe('team');
+    expect(cd.value).toBe(60);
+    expect(cd.external).toBe(true);
+    expect(cd.stat.skillTypes).toBe('comboSkill');
+    const dmg = overclock.effects!.find((e: any) => e.stat.modifier === 'dmgBonus') as any;
+    expect(dmg.target).toBe('team');
+    expect(dmg.value).toBe(-60);
+    expect(dmg.external).toBeUndefined();
+    expect(dmg.stat.skillTypes).toBe('battleSkill');
+  });
+});
+
+// ─── 环境：震荡 (Tremor) — group 1032 ──────────────────────────────────────────
+
+describe("dmgBonus skillTypes:'nonSkill' scope", () => {
+  const nonSkillExt: ScopedDamageModifier = {
+    modifier: 'dmgBonus',
+    value: 1,
+    skillTypes: 'nonSkill',
+    external: true,
+  };
+
+  it('applies to damage with no skill-type (reaction/burn/triggered), as ×2 external', () => {
+    expect(filterDamageModifiers([nonSkillExt], 'heat', undefined, undefined).dmgBonusExternalMult).toBe(2);
+  });
+
+  it('does NOT apply to a standard skill-typed hit', () => {
+    expect(filterDamageModifiers([nonSkillExt], 'heat', 'battleSkill', undefined).dmgBonusExternalMult).toBe(1);
+  });
+
+  it('survives reaction-path accumulation (no targetSkillType) but is dropped for a typed target', () => {
+    const sheet: SheetStatEffect[] = [
+      { stat: { modifier: 'dmgBonus', skillTypes: 'nonSkill' }, value: 100, external: true },
+    ];
+    const reaction = computeStats(makeBase(), sheet, []);
+    const mod = reaction.damageModifiers.find(m => m.skillTypes === 'nonSkill');
+    expect(mod).toBeDefined();
+    expect(mod!.external).toBe(true);
+    expect(mod!.value).toBe(1);
+    const battle = computeStats(makeBase(), sheet, [], 'battleSkill');
+    expect(battle.damageModifiers.some(m => m.skillTypes === 'nonSkill')).toBe(false);
+  });
+
+  it('a normal global dmgBonus (no skillTypes) still matches both typed and untyped hits', () => {
+    const global: ScopedDamageModifier = { modifier: 'dmgBonus', value: 0.5 };
+    expect(filterDamageModifiers([global], 'heat', undefined, undefined).dmgBonus).toBe(0.5);
+    expect(filterDamageModifiers([global], 'heat', 'battleSkill', undefined).dmgBonus).toBe(0.5);
+  });
+
+  it('a battleSkill-scoped dmgBonus matches a battleSkill hit but not an untyped hit', () => {
+    const battle: ScopedDamageModifier = { modifier: 'dmgBonus', value: -0.6, skillTypes: 'battleSkill' };
+    expect(filterDamageModifiers([battle], 'heat', 'battleSkill', undefined).dmgBonus).toBe(-0.6);
+    expect(filterDamageModifiers([battle], 'heat', undefined, undefined).dmgBonus).toBe(0);
+  });
+});
+
+describe('Tremor (group 1032) mechanism data', () => {
+  const tremor = CRITERION_MECHANISMS[1032]!;
+
+  it('has an additive battle-skill debuff and an external non-skill +100% bonus', () => {
+    expect(tremor.effects).toHaveLength(2);
+    const battle = tremor.effects!.find((e: any) => e.stat.skillTypes === 'battleSkill') as any;
+    expect(battle.stat.modifier).toBe('dmgBonus');
+    expect(battle.target).toBe('team');
+    expect(battle.value).toBe(-60);
+    expect(battle.external).toBeUndefined();
+    const nonSkill = tremor.effects!.find((e: any) => e.stat.skillTypes === 'nonSkill') as any;
+    expect(nonSkill.stat.modifier).toBe('dmgBonus');
+    expect(nonSkill.target).toBe('team');
+    expect(nonSkill.value).toBe(100);
+    expect(nonSkill.external).toBe(true);
+  });
+});
+
+// ─── 改写：裹附 (Wrap) — group 1031 ────────────────────────────────────────────
+
+describe('external increasedDmgTaken (standalone damage-taken factor)', () => {
+  it('routes an external element-scoped increasedDmgTaken into the multiplicative factor', () => {
+    const s = computeEnemyStats([], [
+      { stat: { modifier: 'increasedDmgTaken', elements: 'heat' }, value: -30, external: true },
+    ]);
+    expect(s.elementalIncreasedDmgTakenExternalMult.heat).toBeCloseTo(0.7, 10);
+    expect(s.elementalIncreasedDmgTaken.heat ?? 0).toBe(0);
+  });
+
+  it('without external, the same value pools additively (regression)', () => {
+    const s = computeEnemyStats([], [
+      { stat: { modifier: 'increasedDmgTaken', elements: 'heat' }, value: -30 },
+    ]);
+    expect(s.elementalIncreasedDmgTaken.heat).toBeCloseTo(-0.3, 10);
+    expect(s.elementalIncreasedDmgTakenExternalMult.heat ?? 1).toBe(1);
+  });
+
+  it('stacks multiple external factors multiplicatively (standalone)', () => {
+    const s = computeEnemyStats([], [
+      { stat: { modifier: 'increasedDmgTaken', elements: 'heat' }, value: -20, external: true },
+      { stat: { modifier: 'increasedDmgTaken', elements: 'heat' }, value: -10, external: true },
+    ]);
+    expect(s.elementalIncreasedDmgTakenExternalMult.heat).toBeCloseTo(0.72, 10);
+  });
+
+  it('supports physical (vulnerability) scoping', () => {
+    const s = computeEnemyStats([], [
+      { stat: { modifier: 'increasedDmgTaken', elements: 'physical' }, value: -20, external: true },
+    ]);
+    expect(s.elementalIncreasedDmgTakenExternalMult.physical).toBeCloseTo(0.8, 10);
+  });
+});
+
+describe('dmgTakenExternalMult in the damage formula', () => {
+  it('applies dmgTakenExternalMult as a standalone multiplicative factor', () => {
+    const full = computeExpectedDamageWithBreakdown(dmgBase());
+    const reduced = computeExpectedDamageWithBreakdown({ ...dmgBase(), dmgTakenExternalMult: 0.6 });
+    expect(reduced.expectedDamage).toBeCloseTo(full.expectedDamage * 0.6, 6);
+  });
+
+  it('is independent of the additive increasedDmgTaken factor', () => {
+    const d = computeExpectedDamageWithBreakdown({ ...dmgBase(), increasedDmgTaken: 0.5, dmgTakenExternalMult: 0.6 });
+    const ref = computeExpectedDamageWithBreakdown(dmgBase());
+    expect(d.expectedDamage).toBeCloseTo(ref.expectedDamage * 1.5 * 0.6, 6);
+  });
+});
+
+describe('Wrap (group 1031) mechanism data', () => {
+  const wrap = CRITERION_MECHANISMS[1031]!;
+  const MAP: Record<string, string> = {
+    vulnerability: 'physical',
+    heatInfliction: 'heat',
+    cryoInfliction: 'cryo',
+    electricInfliction: 'electric',
+    natureInfliction: 'nature',
+  };
+
+  it('has 15 triggers: apply (scaled) + expire + consumed per element', () => {
+    expect(wrap.triggers).toHaveLength(15);
+    for (const [statusKey, element] of Object.entries(MAP)) {
+      const forKey = wrap.triggers!.filter(te => (te.trigger as any).status === statusKey);
+      expect(forKey).toHaveLength(3);
+      const kinds = forKey.map(te => (te.trigger as any).kind).sort();
+      expect(kinds).toEqual(['onStatusApplied', 'onStatusConsumed', 'onStatusExpire']);
+      for (const te of forKey) {
+        const trig = te.trigger as any;
+        expect(trig.target).toBe('enemy');
+        expect(trig.triggerScope).toBe('global');
+        const eff = te.effects[0] as any;
+        expect(eff.target).toBe('enemy');
+        expect(eff.external).toBe(true);
+        expect(eff.maxStacks).toBe(1);
+        expect(eff.stat.modifier).toBe('increasedDmgTaken');
+        expect(eff.stat.elements).toBe(element);
+        if (trig.kind === 'onStatusApplied') {
+          expect(eff.scaling.additive[0]).toEqual({ key: statusKey, target: 'enemy', coefficient: -10 });
+        } else {
+          expect(eff.value).toBe(0);
+          expect(eff.scaling).toBeUndefined();
+        }
+      }
+    }
+  });
+});

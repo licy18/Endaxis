@@ -76,6 +76,8 @@ export type ActorStats = {
   combo_cd_reduction_flat: number;
   ult_cd_reduction: number;
   ult_cd_reduction_flat: number;
+  combo_cd_external_mult: number;
+  ult_cd_external_mult: number;
 };
 
 export type ActorStatKeys = keyof ActorStats;

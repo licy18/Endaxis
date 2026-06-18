@@ -231,7 +231,6 @@ const sheet: OperatorSheet = {
               hits: [
                 {
                   offset: 0.57,
-                  stagger: 10,
                   effects: [{ kind: 'physicalStatus', physicalType: 'lift' }],
                 },
               ],

@@ -243,6 +243,7 @@ export class EnemyEffectHandler implements EventHandler<EnemyEffectEvents> {
   ): void {
     const state = ctx.state.enemy;
     const { element, time, sourceId, sourceSkillType, sourceSkillId } = event;
+    if (state.hasInflictionBarrier(element, time)) return;
     const stacks = event.stacks ?? 1;
     const duration = event.effectiveDuration;
     const shiftedExpiry = ctx.getShiftedTime(time, duration);
@@ -638,6 +639,7 @@ export class EnemyEffectHandler implements EventHandler<EnemyEffectEvents> {
     sourceSkillId?: string,
   ): void {
     const state = ctx.state.enemy;
+    if (state.hasInflictionBarrier('physical', time)) return;
     const effectiveDuration = duration || VULNERABILITY_DEFAULT_DURATION;
     const shiftedExpiry = ctx.getShiftedTime(time, effectiveDuration);
     if (state.vulnerability === null) {
@@ -1406,6 +1408,7 @@ export class EnemyEffectHandler implements EventHandler<EnemyEffectEvents> {
       consumedStacks: event.consumedStacks,
       sourceBreakdown: event.sourceBreakdown,
       cancelHitKey: (event as any).cancelHitKey,
+      external: event.external,
     });
     ctx.enemyLog({
       type: 'ENEMY_STATUS_APPLY',

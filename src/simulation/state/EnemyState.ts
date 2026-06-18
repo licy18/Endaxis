@@ -164,6 +164,23 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
     return e.stacks;
   }
 
+  /**
+   * True if a non-expired `inflictionBarrier` status (Effect Barrier criterion) covers `element`.
+   * Used by EnemyEffectHandler to drop new infliction/vulnerability applications of that type.
+   * An entry with no `elements` is treated as covering all types.
+   */
+  hasInflictionBarrier(element: string, currentTime: number): boolean {
+    for (const e of this.enemyStatusEffects.values()) {
+      if (currentTime >= e.expiresAt) continue;
+      const stat = e.stat;
+      if (!stat || stat.modifier !== 'inflictionBarrier') continue;
+      const els = (stat as { elements?: string | string[] }).elements;
+      if (els == null) return true;
+      if (Array.isArray(els) ? els.includes(element) : els === element) return true;
+    }
+    return false;
+  }
+
   /** Returns the consumedStacks snapshotted onto the entry, or undefined if absent.
    *  Handles @instanceKey suffix from scheduleDotTicks (falls back to base-id scan). */
   getStatusConsumedStacks(id: string, _currentTime: number): Record<string, number> | undefined {

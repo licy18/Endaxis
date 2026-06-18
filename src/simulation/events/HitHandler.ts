@@ -120,7 +120,11 @@ export class HitHandler implements EventHandler<HitEvent> {
       const dynamicMods: ResolvedStatModifier[] = [];
       for (const entry of activeEntries) {
         if (!entry.stat) continue;
-        dynamicMods.push({ stat: entry.stat, value: entry.value * entry.stacks });
+        dynamicMods.push({
+          stat: entry.stat,
+          value: entry.value * entry.stacks,
+          external: entry.external,
+        });
       }
       const operatorStatus = computeStats(baseStats, [], dynamicMods);
 
@@ -130,7 +134,11 @@ export class HitHandler implements EventHandler<HitEvent> {
       const enemyMods: ResolvedStatModifier[] = [];
       for (const entry of enemyEntries) {
         if (!entry.stat) continue;
-        enemyMods.push({ stat: entry.stat, value: entry.value * entry.stacks });
+        enemyMods.push({
+          stat: entry.stat,
+          value: entry.value * entry.stacks,
+          external: entry.external,
+        });
       }
       const enemyStatus = computeEnemyStats([], enemyMods);
 
@@ -158,6 +166,9 @@ export class HitHandler implements EventHandler<HitEvent> {
         element && enemyStatus?.elementalIncreasedDmgTaken?.[element]
           ? enemyStatus.elementalIncreasedDmgTaken[element]
           : 0;
+      const dmgTakenExternalMult =
+        (enemyStatus?.increasedDmgTakenExternalMult ?? 1) *
+        (element ? (enemyStatus?.elementalIncreasedDmgTakenExternalMult?.[element] ?? 1) : 1);
 
       const isCombustionDot = reactionMeta.reactionType === 'combustion_dot';
       const noCrit = hit._canCrit === false || isCombustionDot;
@@ -168,6 +179,7 @@ export class HitHandler implements EventHandler<HitEvent> {
         critRate: noCrit ? 0 : operatorStatus.critRate,
         critDmg: noCrit ? 0 : operatorStatus.critDmg,
         dmgBonus: mods.dmgBonus,
+        dmgBonusExternalMult: mods.dmgBonusExternalMult,
         ampBonus: mods.ampBonus,
         directMultiplier: mods.directMultiplier,
         enemyDef: ctx.enemyDef,
@@ -177,6 +189,7 @@ export class HitHandler implements EventHandler<HitEvent> {
         susceptibility:
           ((enemyStatus?.susceptibility ?? 0) + elementalSusc) * mods.susceptibilityAmplify,
         increasedDmgTaken: (enemyStatus?.increasedDmgTaken ?? 0) + elementalDmgTaken,
+        dmgTakenExternalMult,
         linkStacks: 0,
         staggerMult,
         finisherMult,
@@ -204,7 +217,11 @@ export class HitHandler implements EventHandler<HitEvent> {
       const extOpMods: SourceTaggedMod[] = [];
       for (const entry of activeEntries) {
         if (!entry.stat) continue;
-        const mod: ResolvedStatModifier = { stat: entry.stat, value: entry.value * entry.stacks };
+        const mod: ResolvedStatModifier = {
+          stat: entry.stat,
+          value: entry.value * entry.stacks,
+          external: entry.external,
+        };
         if (entry.sourceId === hittingTrackId) selfOpMods.push(mod);
         else extOpMods.push({ sourceId: entry.sourceId, mod });
       }
@@ -221,12 +238,17 @@ export class HitHandler implements EventHandler<HitEvent> {
             const partialMod: ResolvedStatModifier = {
               stat: entry.stat,
               value: totalValue * fraction,
+              external: entry.external,
             };
             if (srcId === hittingTrackId) selfEnemyMods.push(partialMod);
             else extEnemyMods.push({ sourceId: srcId, mod: partialMod });
           }
         } else {
-          const mod: ResolvedStatModifier = { stat: entry.stat, value: totalValue };
+          const mod: ResolvedStatModifier = {
+            stat: entry.stat,
+            value: totalValue,
+            external: entry.external,
+          };
           if (entry.sourceId === hittingTrackId) selfEnemyMods.push(mod);
           else extEnemyMods.push({ sourceId: entry.sourceId, mod });
         }
@@ -240,6 +262,7 @@ export class HitHandler implements EventHandler<HitEvent> {
           critRate: noCrit ? 0 : operatorStatus.critRate,
           critDmg: noCrit ? 0 : operatorStatus.critDmg,
           dmgBonus: mods.dmgBonus,
+          dmgBonusExternalMult: mods.dmgBonusExternalMult,
           ampBonus: mods.ampBonus,
           directMultiplier: mods.directMultiplier,
           enemyDef: ctx.enemyDef,
@@ -249,6 +272,7 @@ export class HitHandler implements EventHandler<HitEvent> {
           susceptibility:
             ((enemyStatus?.susceptibility ?? 0) + elementalSusc) * mods.susceptibilityAmplify,
           increasedDmgTaken: (enemyStatus?.increasedDmgTaken ?? 0) + elementalDmgTaken,
+          dmgTakenExternalMult,
           linkStacks: 0,
           staggerMult,
           finisherMult,
@@ -286,7 +310,11 @@ export class HitHandler implements EventHandler<HitEvent> {
       const dynamicMods: ResolvedStatModifier[] = [];
       for (const entry of activeEntries) {
         if (!entry.stat) continue;
-        dynamicMods.push({ stat: entry.stat, value: entry.value * entry.stacks });
+        dynamicMods.push({
+          stat: entry.stat,
+          value: entry.value * entry.stacks,
+          external: entry.external,
+        });
       }
       const operatorStatus = computeStats(baseStats, [], dynamicMods, hit.skillType, hit.skillId);
 
@@ -296,7 +324,11 @@ export class HitHandler implements EventHandler<HitEvent> {
       const enemyMods: ResolvedStatModifier[] = [];
       for (const entry of enemyEntries) {
         if (!entry.stat) continue;
-        enemyMods.push({ stat: entry.stat, value: entry.value * entry.stacks });
+        enemyMods.push({
+          stat: entry.stat,
+          value: entry.value * entry.stacks,
+          external: entry.external,
+        });
       }
       const enemyStatus = computeEnemyStats([], enemyMods);
 
@@ -336,6 +368,7 @@ export class HitHandler implements EventHandler<HitEvent> {
             const mod: ResolvedStatModifier = {
               stat: entry.stat,
               value: entry.value * entry.stacks,
+              external: entry.external,
             };
             if (entry.sourceId === hittingTrackId) selfOpMods.push(mod);
             else extOpMods.push({ sourceId: entry.sourceId, mod });
@@ -352,12 +385,17 @@ export class HitHandler implements EventHandler<HitEvent> {
                 const partialMod: ResolvedStatModifier = {
                   stat: entry.stat,
                   value: totalValue * fraction,
+                  external: entry.external,
                 };
                 if (srcId === hittingTrackId) selfEnemyMods.push(partialMod);
                 else extEnemyMods.push({ sourceId: srcId, mod: partialMod });
               }
             } else {
-              const mod: ResolvedStatModifier = { stat: entry.stat, value: totalValue };
+              const mod: ResolvedStatModifier = {
+                stat: entry.stat,
+                value: totalValue,
+                external: entry.external,
+              };
               if (entry.sourceId === hittingTrackId) selfEnemyMods.push(mod);
               else extEnemyMods.push({ sourceId: entry.sourceId, mod });
             }

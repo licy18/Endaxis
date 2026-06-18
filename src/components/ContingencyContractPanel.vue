@@ -8,13 +8,19 @@ import {
   getSelectedContractScore,
   type ContingencyContractTag,
 } from '@/data/contingencyContracts'
+import { useTimelineStore } from '@/stores/timelineStore'
 
 const { t } = useI18n({ useScope: 'global' })
+const store = useTimelineStore()
 
 const seasons = getContingencyContractSeasons()
 const defaultSeason = getDefaultContingencyContractSeason()
 const activeSeasonId = ref(defaultSeason?.id ?? seasons[0]?.id ?? '')
-const selectedTagIds = ref<Set<number>>(new Set())
+// Backed by the timeline store (persisted per-scenario, fed into the damage simulation).
+const selectedTagIds = computed<Set<number>>({
+  get: () => new Set(store.contingencyContractTags),
+  set: (val) => store.setContingencyContractTags(Array.from(val)),
+})
 
 const CONTRACT_COLUMN_WIDTH = 76
 const CONTRACT_COLUMN_GAP = 12

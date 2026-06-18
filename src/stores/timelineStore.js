@@ -48,7 +48,8 @@ import {
     getWeaponSkillName,
 } from '@/data/gameText'
 import { getTeamStatus, statusToKey } from '@/data/team-status'
-import { buildEffectById, collectEffects, collectTriggerEffects, patchCombatSkills } from '@/data/collect'
+import { buildEffectById, collectEffects, collectTriggerEffects, patchCombatSkills, resolveEffect, resolveTriggerEffectLevel } from '@/data/collect'
+import { CRITERION_MECHANISMS } from '@/data/contingencyContracts/criteriaEffects'
 import { isEnemyEffect } from '@/data/types'
 import { createDefaultEnemyResistance, normalizeEnemyResistance } from '@/data/enemyResistance'
 import { getBaseStatValues } from '@/data/stats/baseValues'
@@ -489,6 +490,21 @@ export const useTimelineStore = defineStore('timeline', () => {
     const weaponOverrides = ref({})
     const equipmentCategoryOverrides = ref({})
     const runtimeInitialEffects = ref([])
+    // Selected Contingency Contract criteria tags (numeric tag ids, e.g. 102803). The criterion
+    // group + level is derived from the id: group = Math.floor(id/100), level = id % 100.
+    const contingencyContractTags = ref([])
+
+    function setContingencyContractTags(tagIds) {
+        contingencyContractTags.value = Array.isArray(tagIds) ? tagIds.map(Number).filter(Number.isFinite) : []
+    }
+
+    // Recompute when the selected Contingency Contract criteria change.
+    watch(contingencyContractTags, () => {
+        if (isLoading.value) return
+        recomputeAllTrackOperatorStatuses()
+        commitState()
+    }, { deep: true })
+
     const inheritedInitialEffects = ref([])
     const inheritedInitialEnemyState = ref(null)
     const simulationEndline = ref(null)
@@ -918,6 +934,7 @@ export const useTimelineStore = defineStore('timeline', () => {
             switchEvents: switchEvents.value,
             inheritedInitialEffects: inheritedInitialEffects.value,
             inheritedInitialEnemyState: inheritedInitialEnemyState.value,
+            contingencyContractTags: contingencyContractTags.value,
             operators: operatorStore.operators,
             weapons: weaponStore.weapons,
             gears: gearStore.gears,
@@ -991,6 +1008,9 @@ export const useTimelineStore = defineStore('timeline', () => {
         inheritedInitialEnemyState.value = snapshot.inheritedInitialEnemyState
             ? JSON.parse(JSON.stringify(snapshot.inheritedInitialEnemyState))
             : null
+        contingencyContractTags.value = Array.isArray(snapshot.contingencyContractTags)
+            ? snapshot.contingencyContractTags.map(Number).filter(Number.isFinite)
+            : []
         recomputeAllTrackOperatorStatuses()
         clearSelection()
     }
@@ -1015,6 +1035,7 @@ export const useTimelineStore = defineStore('timeline', () => {
             switchEvents: switchEvents.value,
             inheritedInitialEffects: inheritedInitialEffects.value,
             inheritedInitialEnemyState: inheritedInitialEnemyState.value,
+            contingencyContractTags: contingencyContractTags.value,
             operators: operatorStore.operators,
             weapons: weaponStore.weapons,
             gears: gearStore.gears,
@@ -1054,6 +1075,9 @@ export const useTimelineStore = defineStore('timeline', () => {
         inheritedInitialEnemyState.value = incoming.inheritedInitialEnemyState
             ? JSON.parse(JSON.stringify(incoming.inheritedInitialEnemyState))
             : null
+        contingencyContractTags.value = Array.isArray(incoming.contingencyContractTags)
+            ? incoming.contingencyContractTags.map(Number).filter(Number.isFinite)
+            : []
         recomputeAllTrackOperatorStatuses()
         clearSelection()
     }
@@ -1859,6 +1883,8 @@ export const useTimelineStore = defineStore('timeline', () => {
             track.stats.combo_cd_reduction_flat = 0
             track.stats.ult_cd_reduction = 0
             track.stats.ult_cd_reduction_flat = 0
+            track.stats.combo_cd_external_mult = 1
+            track.stats.ult_cd_external_mult = 1
             track.gaugeEfficiency = 100
             track.originiumArtsPower = 0
             track.linkCdReduction = 0
@@ -1883,6 +1909,8 @@ export const useTimelineStore = defineStore('timeline', () => {
         track.stats.combo_cd_reduction_flat = status.comboCdReductionFlat ?? 0
         track.stats.ult_cd_reduction = status.ultCdReductionPercent ?? 0
         track.stats.ult_cd_reduction_flat = status.ultCdReductionFlat ?? 0
+        track.stats.combo_cd_external_mult = status.comboCdExternalMult ?? 1
+        track.stats.ult_cd_external_mult = status.ultCdExternalMult ?? 1
         track.gaugeEfficiency = Number(track.stats.ult_charge_eff) || 100
         track.originiumArtsPower = Number(track.stats.originium_arts_power) || 0
         track.linkCdReduction = clampPercent(track.stats.link_cd_reduction)
@@ -2101,6 +2129,49 @@ export const useTimelineStore = defineStore('timeline', () => {
         return out
     }
 
+    // Build operator-side passive effects + enemy/reactive triggers for the selected Contingency
+    // Contract criteria. The criterion group + level index is derived from each tag id:
+    // group = Math.floor(id/100), levelIdx = (id % 100) - 1 (scalar-valued criteria are idx-invariant).
+    function buildContingencyCriteriaInjection() {
+        const effects = []
+        const triggers = []
+        const firstTrackId = tracks.value[0]?.id || null
+        const seenGroups = new Set()
+        for (const rawId of contingencyContractTags.value || []) {
+            const tagId = Number(rawId)
+            if (!Number.isFinite(tagId)) continue
+            const group = Math.floor(tagId / 100)
+            const mech = CRITERION_MECHANISMS[group]
+            if (!mech || seenGroups.has(group)) continue
+            seenGroups.add(group)
+            const idx = Math.max(0, Math.min((tagId % 100) - 1, (mech.levelCount || 1) - 1))
+            const slug = `cc:${group}`
+            ;(mech.effects || []).forEach((eff, ei) => {
+                const resolved = resolveEffect(eff, idx)
+                if (!resolved.id) resolved.id = `${slug}:e${ei}`
+                effects.push({
+                    effect: resolved,
+                    sourceSlotIndex: 0,
+                    sourceOperatorSlug: `${slug}:e${ei}`,
+                })
+            })
+            ;(mech.triggers || []).forEach((te, ti) => {
+                const resolved = resolveTriggerEffectLevel(te, idx)
+                resolved.effects = (resolved.effects || []).map((effect, j) =>
+                    effect.id ? effect : { ...effect, id: `${slug}:t${ti}:e${j}` },
+                )
+                triggers.push({
+                    triggerEffect: resolved,
+                    sourceSlotIndex: 0,
+                    sourceOperatorSlug: `${slug}:t${ti}`,
+                    sourceSkillType: undefined,
+                    sourceTrackId: firstTrackId,
+                })
+            })
+        }
+        return { effects, triggers }
+    }
+
     function recomputeAllTrackOperatorStatuses() {
         tracks.value.forEach(track => hydrateTrackInstances(track))
         const armoryContext = buildTimelineArmoryContext()
@@ -2133,7 +2204,12 @@ export const useTimelineStore = defineStore('timeline', () => {
                 }
             }
 
-            const result = getTeamStatus(team, operatorInstances, weaponInstances, gearInstances, conditions)
+            const cc = buildContingencyCriteriaInjection()
+
+            const result = getTeamStatus(
+                team, operatorInstances, weaponInstances, gearInstances, conditions,
+                undefined, undefined, undefined, cc.effects,
+            )
             const effectById = buildEffectById(collected)
             const collectedTriggers = collectTriggerEffects(team, operatorInstances, weaponInstances, gearInstances, effectById)
             const conditionalPassiveTriggers = buildConditionalPassiveTriggerEffectsFromCollected(collected, armoryContext)
@@ -2141,11 +2217,15 @@ export const useTimelineStore = defineStore('timeline', () => {
                 ...cte,
                 sourceTrackId: cte?.sourceTrackId || tracks.value[cte?.sourceSlotIndex]?.id || cte?.sourceOperatorSlug || null,
             }))
-            runtimeInitialEffects.value = buildInitialRuntimeEffectsFromCollected(collected, armoryContext)
+            // CC triggers already carry a resolved sourceTrackId; append after the cloned operator triggers.
+            const allTriggers = [...serializedTriggers, ...cloneJsonData(cc.triggers)]
+            runtimeInitialEffects.value = buildInitialRuntimeEffectsFromCollected(
+                [...collected, ...cc.effects], armoryContext,
+            )
             tracks.value.forEach((track, index) => {
                 const fallbackStatus = computeFallbackStatus(track)
                 track.enemyStatus = cloneJsonData(result.enemyStatus)
-                track.triggerEffects = serializedTriggers || []
+                track.triggerEffects = allTriggers || []
                 applyOperatorStatusProjection(track, result.operatorStatuses?.[index] || fallbackStatus)
                 refreshTrackActionPayloads(track)
             })
@@ -5228,6 +5308,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                 switchEvents: switchEvents.value,
                 inheritedInitialEffects: inheritedInitialEffects.value,
                 inheritedInitialEnemyState: inheritedInitialEnemyState.value,
+                contingencyContractTags: contingencyContractTags.value,
             }
         }
 
@@ -5384,5 +5465,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         operatorLog,
         enemyLog,
         simLogRevision,
+        contingencyContractTags,
+        setContingencyContractTags,
     }
 })
