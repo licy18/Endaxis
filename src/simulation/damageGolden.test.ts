@@ -330,7 +330,7 @@ describe("optimizer damage golden baselines", () => {
 
     expect(compiledRodin?.enemyConfig).toMatchObject({
       defense: 100,
-      tier: "boss",
+      tier: "leader",
       maxStagger: 280,
       finisherMultiplier: 1.75,
     });

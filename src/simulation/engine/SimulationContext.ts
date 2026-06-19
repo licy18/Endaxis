@@ -44,6 +44,8 @@ export interface SimulationContext {
   enemyResistance: EnemyResistance;
   /** LMDI attribution mode for reaction debuff contributions. */
   lmdiAttributionMode: 'stacks' | 'applier';
+  /** Operator (track id) controlled at the given time, or null if none. Derived from switch events. */
+  getControlledOperatorAt: (time: number) => string | null;
 }
 
 export interface EventHookContext extends SimulationContext {

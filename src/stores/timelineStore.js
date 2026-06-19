@@ -15,6 +15,7 @@ import { useOperatorStore } from '@/stores/operatorStore'
 import { useWeaponStore } from '@/stores/weaponStore'
 import { useGearStore } from '@/stores/gearStore'
 import { findOperatorInstance, findWeaponInstance, findGearInstance } from '@/stores/timeline/instanceLookup'
+import { buildControlledOperatorSegments, resolveControlledOperatorAt } from '@/stores/timeline/controlledOperator'
 import {
     getOperator as getOperatorSheet,
     getOperatorList as getTimelineOperatorList,
@@ -1277,6 +1278,10 @@ export const useTimelineStore = defineStore('timeline', () => {
             runtimeInitialEnemyState: sourceSnapshot.inheritedInitialEnemyState || inheritedInitialEnemyState.value,
             simulationEndline: time,
             lmdiAttributionMode: lmdiAttributionMode.value,
+            controlledOperatorSegments: buildControlledOperatorSegments(
+                (sourceSnapshot.tracks || tracks.value)?.[0]?.id ?? null,
+                sourceSnapshot.switchEvents || [],
+            ),
         })
 
         if (!compiled) return null
@@ -1296,6 +1301,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                 enemyResistance: compiled.enemyResistance,
                 endlineTime: time,
                 lmdiAttributionMode: compiled.lmdiAttributionMode,
+                controlledOperatorSegments: compiled.controlledOperatorSegments,
             },
         )
 
@@ -2182,7 +2188,12 @@ export const useTimelineStore = defineStore('timeline', () => {
                     sourceOperatorSlug: `${slug}:e${ei}`,
                 })
             })
-            ;(mech.triggers || []).forEach((te, ti) => {
+            // Level-invariant triggers plus the structure for the selected level.
+            const levelTriggers = [
+                ...(mech.triggers || []),
+                ...(mech.triggersByLevel?.[idx] || []),
+            ]
+            levelTriggers.forEach((te, ti) => {
                 const resolved = resolveTriggerEffectLevel(te, idx)
                 resolved.effects = (resolved.effects || []).map((effect, j) =>
                     effect.id ? effect : { ...effect, id: `${slug}:t${ti}:e${j}` },
@@ -2933,6 +2944,18 @@ export const useTimelineStore = defineStore('timeline', () => {
             name: getOperatorGameName(charInfo.id || charInfo.slug || track.id),
         }
     }))
+
+    // ─── Controlled operator ─────────────────────────────────────────────────
+    // The initial controlled operator is the first track's operator; each switch event changes
+    // control from its time onward. Derived from existing state — nothing extra is persisted.
+    const controlledOperatorSegments = computed(() =>
+        buildControlledOperatorSegments(tracks.value[0]?.id ?? null, switchEvents.value)
+    )
+
+    /** Returns the controlled operator (track id) at the given time, or null if none. */
+    function getControlledOperatorAt(time) {
+        return resolveControlledOperatorAt(tracks.value[0]?.id ?? null, switchEvents.value, time)
+    }
 
     const activeWeapon = computed(() => {
         const track = activeTrackIndex.value !== null
@@ -4704,6 +4727,7 @@ export const useTimelineStore = defineStore('timeline', () => {
             runtimeInitialEnemyState: inheritedInitialEnemyState.value,
             simulationEndline: simulationEndline.value,
             lmdiAttributionMode: lmdiAttributionMode.value,
+            controlledOperatorSegments: controlledOperatorSegments.value,
         });
     });
 
@@ -4729,6 +4753,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                 enemyResistance: scenario.enemyResistance,
                 endlineTime: scenario.endlineTime,
                 lmdiAttributionMode: scenario.lmdiAttributionMode,
+                controlledOperatorSegments: scenario.controlledOperatorSegments,
             },
         );
     });
@@ -5484,7 +5509,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         lmdiAttributionMode,
         selectedActionId, selectedLibrarySkillId, multiSelectedIds, clipboard, isCapturing, setIsCapturing, showCursorGuide, operatorEffectsVisible, isBoxSelectMode, cursorPosTimeline, cursorCurrentTime, cursorPosition, snapStep,
         selectedAnomalyId, setSelectedAnomalyId, updateTrackGaugeEfficiency,
-        teamTracksInfo, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
+        teamTracksInfo, controlledOperatorSegments, getControlledOperatorAt, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, exportShareString, importShareString, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction,
         addSkillToTrack, setDraggingSkill, setTimelineShift, setScrollTop, resetTimelineViewport, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGaugeData, getTrackGaugeMax, updateTrackInitialGauge, updateTrackMaxGauge, updateTrackOriginiumArtsPower, updateTrackLinkCdReduction, updateTrackWeapon,
         updateTrackWeaponTier, syncAllWeaponModifiers, getModifierLabel,

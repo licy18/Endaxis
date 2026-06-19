@@ -1,21 +1,187 @@
 import type { Effect, TriggerEffect } from '../types';
 
-/**
- * Damage-model mechanism for a Contingency Contract criterion, ported from the optimizer's
- * hand-authored `contingency-contract/criteria.ts`. Keyed by Endaxis `groupId` (numeric), which
- * corresponds to the optimizer's `group: 'c<groupId>'`.
- *
- * `effects` are operator-side passive modifiers (`target: 'team'`); `triggers` express enemy-side
- * and reactive behaviour. Leveled values (e.g. `[-45, -90]`) are resolved at `level - 1` by
- * `resolveEffect` / `resolveTriggerEffectLevel`. `levelCount` bounds the selectable level index.
- *
- * Only criteria whose behaviour is modeled in the damage engine are listed here.
- */
 export interface CriterionMechanism {
   /** Number of selectable levels (for value-array indexing / clamping). */
   levelCount: number;
   effects?: Effect[];
   triggers?: TriggerEffect[];
+  /** Triggers whose *structure* depends on the selected level. When present, the injection uses
+   *  `triggersByLevel[level-1]` in addition to `triggers` (which holds level-invariant triggers). */
+  triggersByLevel?: TriggerEffect[][];
+}
+
+/**
+ * Heat Loss (队列：失温 / 热流失) — c1003 Battle Skill / c1004 Combo Skill.
+ *
+ * Every 2 (level 1) / every (level 2) qualifying skill cast by ANY operator — each cast gated by a
+ * per-caster 3s recast cooldown (`icd`) — adds 1 Cryo Infliction stack to the CONTROLLED operator
+ * (`target:'controlled'`); team-wide counting for level 1 uses a shared boolean toggle hosted on the
+ * enemy. On the 4th stack all Cryo is consumed and converted to Freeze. Display-only: every status
+ * here omits `stat`, so it never touches the damage model.
+ */
+// Cryo persists until consumed (no natural decay). NOT literal Infinity: the operator-effect handler
+// treats an Infinity expiry as a hidden permanent passive and skips the status log + onStatusApplied —
+// which the Cryo display and the 4-stack→Freeze conversion both depend on. A large finite value is
+// effectively infinite for any real timeline while keeping those alive.
+const HEAT_LOSS_CRYO_DURATION = 1e9;
+const HEAT_LOSS_FROZEN_DURATION = 5;
+/** Shared operator-Freeze status id (one freeze state regardless of which source froze the operator),
+ *  so the lysis criteria (Pyrolysis/Biolysis/Electrolysis/Physicolysis) can extend / dispel it. */
+const FROZEN_ID = 'cc:frozen';
+const FROZEN_ICON = '/icons/icon_battle_debuff_frozen.webp';
+/** Convention id for "this operator ignores Cryo Infliction" (e.g. Estella talent 2). An operator
+ *  carrying this hidden status as the controlled operator accrues no Heat Loss Cryo (so never Freezes). */
+export const CRYO_INFLICTION_IMMUNE_ID = 'cryo-infliction-immune';
+
+function heatLossMechanism(group: number, skillType: 'battleSkill' | 'comboSkill'): CriterionMechanism {
+  const cryoId = `cc:${group}:cryo`;
+  const toggleId = `cc:${group}:toggle`;
+  const frozenId = FROZEN_ID;
+  // While the controlled operator is Frozen, no new Cryo stacks accrue.
+  const notFrozen = {
+    kind: 'not' as const,
+    condition: { kind: 'operatorStatus' as const, status: frozenId, target: 'controlled' as const },
+  };
+  // Operators with the cryo-immunity marker (e.g. Estella) accrue no Cryo while controlled.
+  const notCryoImmune = {
+    kind: 'not' as const,
+    condition: {
+      kind: 'operatorStatus' as const,
+      status: CRYO_INFLICTION_IMMUNE_ID,
+      target: 'controlled' as const,
+    },
+  };
+  const cryo = (extra: Partial<Effect>): Effect =>
+    ({
+      kind: 'status',
+      id: cryoId,
+      target: 'controlled',
+      stacks: 1,
+      maxStacks: 4,
+      stackStrategy: 'REFRESH_DURATION',
+      duration: HEAT_LOSS_CRYO_DURATION,
+      name: 'Cryo Infliction',
+      icon: '/icons/icon_energy_fusion_cryst.webp',
+      icd: 3,
+      ...extra,
+    }) as Effect;
+  const castTrigger = (effects: Effect[]): TriggerEffect => ({
+    trigger: { kind: 'onActionStart', skillTypes: skillType, triggerScope: 'global' },
+    effects,
+  });
+  return {
+    levelCount: 2,
+    // Level-invariant: at the 4th Cryo stack, consume all Cryo and apply Frozen (display-only).
+    triggers: [
+      {
+        trigger: { kind: 'onStatusApplied', status: cryoId, target: 'self', triggerScope: 'global' },
+        effects: [
+          {
+            kind: 'status',
+            id: frozenId,
+            target: 'controlled',
+            maxStacks: 1,
+            duration: HEAT_LOSS_FROZEN_DURATION,
+            name: 'Frozen',
+            icon: FROZEN_ICON,
+            condition: {
+              kind: 'operatorStatus',
+              status: cryoId,
+              target: 'controlled',
+              stacks: { compare: 'atLeast', count: 4 },
+              consume: true,
+            },
+          } as Effect,
+        ],
+      },
+    ],
+    triggersByLevel: [
+      // Level 1 — every 2 team-wide casts (boolean toggle on the enemy).
+      [
+        castTrigger([
+          // bank: when the toggle is absent, set it (this cast is the "1st of 2").
+          {
+            kind: 'status',
+            id: toggleId,
+            target: 'enemy',
+            maxStacks: 1,
+            duration: Infinity,
+            ignoreTimeShift: true,
+            hide: true,
+            silent: true,
+            icd: 3,
+            condition: { kind: 'not', condition: { kind: 'enemyStatus', status: toggleId } },
+          } as Effect,
+          // cryo+: when the toggle is present (the "2nd"), consume it and add a Cryo stack —
+          // unless the controlled operator is already Frozen.
+          cryo({
+            condition: [
+              { kind: 'enemyStatus', status: toggleId, consume: true },
+              notFrozen,
+              notCryoImmune,
+            ],
+          }),
+        ]),
+      ],
+      // Level 2 — every cast adds a Cryo stack, unless the controlled operator is Frozen or immune.
+      [castTrigger([cryo({ condition: [notFrozen, notCryoImmune] })])],
+    ],
+  };
+}
+
+/**
+ * Lysis family (融化 / 升华 / 电解 / 切削) — c1017 / c1018 / c1019 / c1024.
+ *
+ * Modifies the operator Freeze produced by Heat Loss: while active, Freeze lasts 15s (vs the base 5s),
+ * and any operator casting a skill of the matching element dispels it early. Display-only.
+ */
+const LYSIS_FREEZE_DURATION = 15;
+
+function lysisMechanism(element: 'heat' | 'nature' | 'electric' | 'physical'): CriterionMechanism {
+  return {
+    levelCount: 1,
+    triggers: [
+      // Extend: when the operator Freeze lands, replace it with the longer 15s window. `silent` so the
+      // re-apply doesn't re-fire onStatusApplied (no extend→extend loop); it still renders.
+      {
+        trigger: { kind: 'onStatusApplied', status: FROZEN_ID, target: 'self', triggerScope: 'global' },
+        effects: [
+          {
+            kind: 'status',
+            id: FROZEN_ID,
+            target: 'controlled',
+            maxStacks: 1,
+            duration: LYSIS_FREEZE_DURATION,
+            stackStrategy: 'REPLACE',
+            name: 'Frozen',
+            icon: FROZEN_ICON,
+            silent: true,
+          } as Effect,
+        ],
+      },
+      // Dispel: any operator casting a matching-element skill consumes the Freeze on the controlled
+      // operator. The 0-duration carrier never applies; the consume rides on its condition.
+      {
+        trigger: { kind: 'onActionStart', element, triggerScope: 'global' },
+        effects: [
+          {
+            kind: 'status',
+            id: `cc:dispel:${element}`,
+            target: 'controlled',
+            duration: 0,
+            hide: true,
+            silent: true,
+            condition: {
+              kind: 'operatorStatus',
+              status: FROZEN_ID,
+              target: 'controlled',
+              consume: true,
+            },
+          } as Effect,
+        ],
+      },
+    ],
+  };
 }
 
 /** The five infliction/vulnerability (status, element) pairs the enemy can carry. */
@@ -218,9 +384,50 @@ export const CRITERION_MECHANISMS: Record<number, CriterionMechanism> = {
       ];
     }),
   },
+
+  // ─── Placeholders — criteria with no damage-model mechanism (yet) ─────────────
+  // Mechanics that don't affect the damage simulation. Fill in `effects` / `triggers` if/when modeled.
+
+  // Thrill (改写：刺激) — enemy DMG dealt +30% / +80%.
+  1002: { levelCount: 2 },
+  // Time Limit (环境：时限) — countdown -100s / -200s.
+  1021: { levelCount: 2 },
+  // Vitality (改写：活性) — enemy HP +50% / +100% / +200%.
+  9001: { levelCount: 3 },
+  // Decapitate (队列：斩首) — controlled operator DMG taken +50% / +100%.
+  1006: { levelCount: 2 },
+  // Shared group c1013: Hypoxia (环境：厌氧, stamina recovery -50%) and Mire (环境：禁锢, dodge disabled) — mutually exclusive.
+  1013: { levelCount: 2 },
+  // Withering (环境：枯萎) — fewer / no between-wave healing masses.
+  1020: { levelCount: 2 },
+  // Surge (改写：奔腾) — enemy move speed +100%; DMG taken capped at 25% max HP per 0.1s.
+  1023: { levelCount: 1 },
+  // Sync Growth (环境：同步生长) — controlled operator heal/shield heals on-field enemies 8% max HP.
+  1033: { levelCount: 1 },
+  // Exhaustion (队列：衰竭) — DMG taken converts to max-HP loss (melee 30% / ranged 50%).
+  1014: { levelCount: 1 },
+  // Partition (环境：分隔) — controlled operator cannot be switched once battle begins.
+  1012: { levelCount: 1 },
+  // Toxic Residue (改写：遗毒) — defeated enemy leaves a toxic patch (2% / 5% max HP per second).
+  1015: { levelCount: 2 },
+  // Heat Loss · Battle Skill (队列：失温) — Battle Skill casts grant the controlled operator Cryo → Freeze.
+  1003: heatLossMechanism(1003, 'battleSkill'),
+  // Heat Loss · Combo Skill (队列：热流失) — Combo Skill casts grant the controlled operator Cryo → Freeze.
+  1004: heatLossMechanism(1004, 'comboSkill'),
+  // Pyrolysis (环境：融化) — Freeze extended to 15s; dispel with a Heat-type skill.
+  1017: lysisMechanism('heat'),
+  // Biolysis (环境：升华) — Freeze extended to 15s; dispel with a Nature-type skill.
+  1018: lysisMechanism('nature'),
+  // Electrolysis (环境：电解) — Freeze extended to 15s; dispel with an Electric-type skill.
+  1019: lysisMechanism('electric'),
+  // Physicolysis (环境：切削) — Freeze extended to 15s; dispel with a Physical-type skill.
+  1024: lysisMechanism('physical'),
+  // Healing (改写：愈合) — enemy under control effects regenerates 5% / 15% max HP per second.
+  1011: { levelCount: 2 },
 };
 
-/** True when the given numeric groupId has a damage-model mechanism implemented. */
+/** True when the given numeric groupId has a damage-model mechanism (effects or triggers) implemented. */
 export function hasCriterionMechanism(groupId: number): boolean {
-  return groupId in CRITERION_MECHANISMS;
+  const mech = CRITERION_MECHANISMS[groupId];
+  return !!mech && ((mech.effects?.length ?? 0) > 0 || (mech.triggers?.length ?? 0) > 0);
 }

@@ -10,6 +10,7 @@ import type { OperatorStat } from "@/data/types";
 import type { BaseStatValues } from "@/data/stats/types";
 import type { EnemyResistance } from "@/data/enemyResistance";
 import { normalizeEnemyResistance } from "@/data/enemyResistance";
+import type { ControlSegment } from "@/stores/timeline/controlledOperator";
 
 export interface InitialEffect {
   kind?: "status" | "oneTime";
@@ -40,6 +41,7 @@ interface SimulationOptions {
   enemyResistance?: EnemyResistance;
   endlineTime?: number;
   lmdiAttributionMode?: "stacks" | "applier";
+  controlledOperatorSegments?: ControlSegment[];
 }
 
 export function simulate(
@@ -70,6 +72,9 @@ export function simulate(
   if (options.endlineTime !== undefined) engine.endlineTime = options.endlineTime;
   if (options.lmdiAttributionMode !== undefined) {
     engine.lmdiAttributionMode = options.lmdiAttributionMode;
+  }
+  if (options.controlledOperatorSegments) {
+    engine.controlledOperatorSegments = options.controlledOperatorSegments;
   }
 
   function finiteRemaining(entry: any) {

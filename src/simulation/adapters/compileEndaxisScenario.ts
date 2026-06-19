@@ -15,6 +15,7 @@ interface CompileEndaxisScenarioInput {
   runtimeInitialEnemyState?: any;
   simulationEndline?: number | null;
   lmdiAttributionMode?: "stacks" | "applier";
+  controlledOperatorSegments?: { startTime: number; operatorId: string | null }[];
 }
 
 function buildTriggerRegistryEntries(tracks: any[]) {
@@ -118,6 +119,7 @@ export function compileEndaxisScenario(input: CompileEndaxisScenarioInput) {
     runtimeInitialEnemyState = null,
     simulationEndline = null,
     lmdiAttributionMode = "stacks",
+    controlledOperatorSegments = [],
   } = input;
 
   if (!scenarioData) return null;
@@ -180,6 +182,7 @@ export function compileEndaxisScenario(input: CompileEndaxisScenarioInput) {
     consumedStacksWriteKeys,
     initialEffects: runtimeInitialEffects,
     initialEnemyState: runtimeInitialEnemyState,
+    controlledOperatorSegments,
     baseStatsByTrack,
     enemyDef: enemySheet?.def ?? enemyConfig.defense ?? 100,
     enemyResistance: normalizeEnemyResistance(enemyConfig.resistance ?? enemyResistance),

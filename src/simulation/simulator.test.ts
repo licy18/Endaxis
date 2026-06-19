@@ -13,6 +13,7 @@ import { extractRawEntries, resolveHitsFromSheet } from "@/stores/timeline/resol
 import type { BaseStatValues } from "@/data/stats/types";
 import type { Effect, TriggerEffect } from "@/data/types";
 import type { GearInstance, OperatorInstance, TeamInstance, WeaponInstance } from "@/types";
+import { CRITERION_MECHANISMS } from "@/data/contingencyContracts/criteriaEffects";
 
 type TrackPatch = Omit<Partial<ScenarioTrack>, "stats"> & {
   stats?: Partial<ScenarioTrack["stats"]>;
@@ -315,7 +316,7 @@ describe("optimizer-native runtime parity", () => {
       staggerBreakDuration: 10,
       finisherRecovery: 100,
       defense: 100,
-      tier: "boss",
+      tier: "leader",
     });
     expect(compiled?.actors[0]).toMatchObject({
       id: "alpha",
@@ -1331,5 +1332,241 @@ describe("optimizer-native runtime parity", () => {
       expect.objectContaining({ typeKey: "vulnerability", time: 0, stacks: 1 }),
       expect.objectContaining({ typeKey: "crush", time: 2, stacks: 3 }),
     ]);
+  });
+});
+
+describe("controlled-operator target scope", () => {
+  const cryoTrigger = (): TriggerEffect => ({
+    trigger: { kind: "onActionStart", skillTypes: "battleSkill", triggerScope: "global" },
+    effects: [
+      {
+        kind: "status",
+        id: "test-cryo",
+        target: "controlled",
+        stacks: 1,
+        maxStacks: 4,
+        duration: 20,
+        name: "Cryo",
+      } as Effect,
+    ],
+  });
+
+  function runWithControl(
+    tracks: ScenarioTrack[],
+    segments: { startTime: number; operatorId: string | null }[],
+    entries: NonNullable<TrackPatch["triggerEffects"]>,
+  ) {
+    const { timeline, teamConfig, enemyConfig, actors } = compileScenario(createScenario(tracks));
+    const baseStatsByTrack = new Map<string, BaseStatValues>(
+      actors.map((actor) => [actor.id, BASE_STATS]),
+    );
+    return simulate(timeline, teamConfig, enemyConfig, actors, new TriggerRegistry(entries), undefined, {
+      baseStatsByTrack,
+      enemyDef: 100,
+      controlledOperatorSegments: segments,
+    });
+  }
+
+  const cryoApplies = (result: ReturnType<typeof runWithControl>) =>
+    result.operatorLog
+      .filter(
+        (e): e is Extract<typeof e, { type: "OPERATOR_EFFECT_APPLY" }> =>
+          e.type === "OPERATOR_EFFECT_APPLY",
+      )
+      .filter((e) => e.id === "test-cryo");
+
+  it("applies a target:'controlled' status to the controlled operator, not the caster", () => {
+    const result = runWithControl(
+      [
+        createTrack("A", [createAction("a-bs", "battleSkill", { startTime: 0 })]),
+        createTrack("B", []),
+      ],
+      [{ startTime: 0, operatorId: "B" }],
+      [{ sourceTrackId: "A", triggerEffect: cryoTrigger() }],
+    );
+    const applies = cryoApplies(result);
+    expect(applies).toHaveLength(1);
+    expect(applies[0]!.targetTrackId).toBe("B");
+  });
+
+  it("follows a control switch over time", () => {
+    const result = runWithControl(
+      [
+        createTrack("A", [
+          createAction("a1", "battleSkill", { startTime: 0 }),
+          createAction("a2", "battleSkill", { startTime: 6 }),
+        ]),
+        createTrack("B", []),
+      ],
+      [
+        { startTime: 0, operatorId: "A" },
+        { startTime: 5, operatorId: "B" },
+      ],
+      [{ sourceTrackId: "A", triggerEffect: cryoTrigger() }],
+    );
+    expect(cryoApplies(result).map((e) => ({ time: e.time, target: e.targetTrackId }))).toEqual([
+      { time: 0, target: "A" },
+      { time: 6, target: "B" },
+    ]);
+  });
+
+  it("drops the status when nobody is controlled", () => {
+    const result = runWithControl(
+      [
+        createTrack("A", [createAction("a-bs", "battleSkill", { startTime: 0 })]),
+        createTrack("B", []),
+      ],
+      [{ startTime: 0, operatorId: null }],
+      [{ sourceTrackId: "A", triggerEffect: cryoTrigger() }],
+    );
+    expect(cryoApplies(result)).toHaveLength(0);
+  });
+});
+
+describe("Heat Loss criterion end-to-end (group 1003)", () => {
+  const mech = CRITERION_MECHANISMS[1003]!;
+  // Registry entries for a given level (idx): level-invariant freeze trigger + the level's cast trigger.
+  const entriesFor = (idx: number): NonNullable<TrackPatch["triggerEffects"]> =>
+    [...(mech.triggers ?? []), ...(mech.triggersByLevel![idx]!)].map((te) => ({
+      sourceTrackId: "A",
+      triggerEffect: te,
+    }));
+
+  // Caster A controlled throughout; casts spaced 4s apart so each clears the per-caster 3s icd.
+  function run(idx: number, castTimes: number[], initialEffects?: any[]) {
+    const actions = castTimes.map((t, i) =>
+      createAction(`bs${i}`, "battleSkill", { startTime: t }),
+    );
+    const tracks = [createTrack("A", actions)];
+    const { timeline, teamConfig, enemyConfig, actors } = compileScenario(createScenario(tracks));
+    const baseStatsByTrack = new Map<string, BaseStatValues>(
+      actors.map((actor) => [actor.id, BASE_STATS]),
+    );
+    const result = simulate(
+      timeline,
+      teamConfig,
+      enemyConfig,
+      actors,
+      new TriggerRegistry(entriesFor(idx)),
+      undefined,
+      {
+        baseStatsByTrack,
+        enemyDef: 100,
+        controlledOperatorSegments: [{ startTime: 0, operatorId: "A" }],
+        initialEffects,
+      },
+    );
+    const applies = (id: string) =>
+      result.operatorLog.filter(
+        (e): e is Extract<typeof e, { type: "OPERATOR_EFFECT_APPLY" }> =>
+          e.type === "OPERATOR_EFFECT_APPLY" && e.id === id,
+      );
+    return { applies };
+  }
+
+  it("level 2: adds a Cryo stack per (icd-gated) cast and freezes on the 4th", () => {
+    const { applies } = run(1, [0, 4, 8, 12]);
+    const cryo = applies("cc:1003:cryo");
+    expect(cryo.map((e) => e.cumulativeStacks)).toEqual([1, 2, 3, 4]);
+    const frozen = applies("cc:frozen");
+    expect(frozen).toHaveLength(1);
+    expect(frozen[0]!.targetTrackId).toBe("A");
+  });
+
+  it("level 1: adds a Cryo stack every 2 casts (team-wide toggle)", () => {
+    const { applies } = run(0, [0, 4, 8, 12]);
+    // 4 counted casts → bank, cryo, bank, cryo → 2 stacks, no freeze.
+    expect(applies("cc:1003:cryo")).toHaveLength(2);
+    expect(applies("cc:frozen")).toHaveLength(0);
+  });
+
+  it("per-caster 3s recast cooldown: casts within 3s are not counted", () => {
+    // Casts at 0/1/2 are all <3s after the first → only the first counts → a single Cryo stack.
+    const { applies } = run(1, [0, 1, 2]);
+    expect(applies("cc:1003:cryo")).toHaveLength(1);
+  });
+
+  it("blocks new Cryo stacks while the controlled operator is Frozen", () => {
+    // Freeze lands at t=12 (4th stack) and lasts 5s. The t=16 cast clears the 3s icd but is
+    // blocked by Frozen; the t=20 cast lands after Frozen expires and starts a fresh stack.
+    const { applies } = run(1, [0, 4, 8, 12, 16, 20]);
+    expect(applies("cc:1003:cryo").map((e) => e.cumulativeStacks)).toEqual([1, 2, 3, 4, 1]);
+    expect(applies("cc:frozen")).toHaveLength(1);
+  });
+
+  it("a cryo-immune controlled operator (e.g. Estella talent 2) accrues no Cryo", () => {
+    // Pre-apply the immunity marker on the controlled operator (as Estella's passive talent would).
+    const { applies } = run(1, [0, 4, 8, 12], [
+      { targetTrackId: "A", id: "cryo-infliction-immune" },
+    ]);
+    expect(applies("cc:1003:cryo")).toHaveLength(0);
+    expect(applies("cc:frozen")).toHaveLength(0);
+  });
+});
+
+describe("Lysis (Freeze extend + dispel) end-to-end (1003 Heat Loss + 1017 Pyrolysis)", () => {
+  const hl = CRITERION_MECHANISMS[1003]!;
+  const pyro = CRITERION_MECHANISMS[1017]!; // heat-element dispel
+
+  // Heat Loss level 2 (every cast) + Pyrolysis extend/dispel triggers, all sourced from "A".
+  const entries: NonNullable<TrackPatch["triggerEffects"]> = [
+    ...(hl.triggers ?? []),
+    ...hl.triggersByLevel![1]!,
+    ...(pyro.triggers ?? []),
+  ].map((te) => ({ sourceTrackId: "A", triggerEffect: te }));
+
+  function runActions(actions: Action[]) {
+    const tracks = [createTrack("A", actions)];
+    const { timeline, teamConfig, enemyConfig, actors } = compileScenario(createScenario(tracks));
+    const baseStatsByTrack = new Map<string, BaseStatValues>(
+      actors.map((actor) => [actor.id, BASE_STATS]),
+    );
+    const result = simulate(
+      timeline,
+      teamConfig,
+      enemyConfig,
+      actors,
+      new TriggerRegistry(entries),
+      undefined,
+      {
+        baseStatsByTrack,
+        enemyDef: 100,
+        controlledOperatorSegments: [{ startTime: 0, operatorId: "A" }],
+      },
+    );
+    const ops = (type: string, id: string) =>
+      result.operatorLog.filter((e: any) => e.type === type && e.id === id);
+    return { ops };
+  }
+
+  // Four icd-clearing battle-skill casts → Cryo→4 → Freeze at t=12.
+  const freezeRamp = [0, 4, 8, 12].map((t, i) =>
+    createAction(`bs${i}`, "battleSkill", { startTime: t }),
+  );
+
+  it("extends the Freeze window to 15s while a lysis criterion is active", () => {
+    const { ops } = runActions(freezeRamp);
+    const frozen = ops("OPERATOR_EFFECT_APPLY", "cc:frozen") as any[];
+    expect(frozen.some((e) => e.expiresAt === 27)).toBe(true); // 12 + 15, not the base 12 + 5
+  });
+
+  it("a matching-element skill dispels the Freeze early", () => {
+    const { ops } = runActions([
+      ...freezeRamp,
+      createAction("heatCast", "comboSkill", { startTime: 14, element: "heat" }),
+    ]);
+    const expired = ops("OPERATOR_EFFECT_EXPIRE", "cc:frozen") as any[];
+    expect(expired.some((e) => e.time === 14 && e.consumed)).toBe(true);
+  });
+
+  it("a non-matching element does not dispel", () => {
+    const { ops } = runActions([
+      ...freezeRamp,
+      createAction("coldCast", "comboSkill", { startTime: 14, element: "cryo" }),
+    ]);
+    const expiredAt14 = (ops("OPERATOR_EFFECT_EXPIRE", "cc:frozen") as any[]).filter(
+      (e) => e.time === 14 && e.consumed,
+    );
+    expect(expiredAt14).toHaveLength(0);
   });
 });

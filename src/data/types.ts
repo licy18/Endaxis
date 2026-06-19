@@ -126,6 +126,11 @@ interface TriggerScopeFilter {
   triggerScope?: 'self' | 'global';
 }
 
+interface TriggerElementFilter {
+  /** Restrict to actions whose element matches (e.g. 'heat'). Omitted = any element. */
+  element?: DamageElement | DamageElement[];
+}
+
 export type TriggerEvent =
   | ({ kind: 'onHit' } & TriggerSkillFilter & TriggerScopeFilter)
   | ({ kind: 'onFinalStrike' } & TriggerScopeFilter)
@@ -135,7 +140,7 @@ export type TriggerEvent =
   | ({ kind: 'onStatusApplied' } & TriggerSkillFilter & TriggerStatusFilter & TriggerScopeFilter)
   | ({ kind: 'onStatusExpire' } & TriggerSkillFilter & TriggerStatusFilter & TriggerScopeFilter)
   | ({ kind: 'onStatusConsumed' } & TriggerSkillFilter & TriggerStatusFilter & TriggerScopeFilter)
-  | ({ kind: 'onActionStart' } & TriggerSkillFilter & TriggerScopeFilter)
+  | ({ kind: 'onActionStart' } & TriggerSkillFilter & TriggerScopeFilter & TriggerElementFilter)
   | ({ kind: 'duringAction' } & TriggerSkillFilter);
 
 // ─── Effect conditions ──────────────────────────────────────────────────────
@@ -172,6 +177,9 @@ export interface OperatorCondition {
   consume?: boolean | number;
   /** 'team' = check any team member and consume from all. */
   consumeScope?: 'team';
+  /** Which operator the status is read from / consumed on. 'self' (default) = the source operator;
+   *  'controlled' = the operator controlled at the effect's time (resolved via the control timeline). */
+  target?: 'self' | 'controlled';
 }
 
 export interface OperatorHpCondition {
@@ -267,7 +275,9 @@ export type EffectTargetScope =
   | 'teamExcludeSelf'
   | 'teamExcludeSameElement'
   | 'enemy'
-  | 'owner';
+  | 'owner'
+  /** The operator the player is controlling at the effect's time. Resolved via the control timeline. */
+  | 'controlled';
 
 export type EffectTarget =
   | { scope: EffectTargetScope; classes?: operatorClass[] }

@@ -35,7 +35,12 @@ export interface ScenarioData {
 export type SystemConstants = EnemyConfig & TeamConfig;
 
 export interface SwitchEvent {
-  // TODO
+  /** Unique id (format `sw_<uid>`). */
+  id: string;
+  /** Time at which control switches to `characterId` (effective from this time onward). */
+  time: number;
+  /** Track id (operator slug) that gains control at `time`. */
+  characterId: string;
 }
 
 export interface Connection {

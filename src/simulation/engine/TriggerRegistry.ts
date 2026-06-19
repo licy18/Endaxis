@@ -20,6 +20,7 @@ import {
   scheduleConsumption,
   checkStacks,
   dispatchSingleActorEffect,
+  conditionHasConsume,
 } from '@/simulation/events/effectDispatch';
 import { passesSkillFilter } from '@/data/filter';
 import { statusToKey } from '@/data/team-status';
@@ -236,6 +237,12 @@ export class TriggerRegistry {
       if (action) {
         if (t.skillTypes && !passesSkillFilter(t.skillTypes, action.node.type)) continue;
         if (t.skillId && !passesSkillFilter(t.skillId, action.node.skillId)) continue;
+        if (t.element) {
+          const allowed = Array.isArray(t.element) ? t.element : [t.element];
+          if (!allowed.includes(action.node.element as (typeof allowed)[number])) continue;
+        }
+      } else if (t.element) {
+        continue; // element-filtered trigger needs an action to match against
       }
       this.dispatch(
         entry.triggerEffect.effects,
@@ -453,10 +460,10 @@ export class TriggerRegistry {
       // Condition check
       if (!evaluateEffectCondition(resolved.condition, time, sourceTrackId, ctx)) continue;
 
-      // Schedule consumption if the condition has consume: true
+      // Schedule consumption if the condition (or any element of a compound condition) has consume.
       const cond = resolved.condition;
-      if (cond && 'consume' in cond && cond.consume) {
-        scheduleConsumption(cond, time, sourceTrackId, ctx, sourceSkillType, sourceSkillId);
+      if (conditionHasConsume(cond)) {
+        scheduleConsumption(cond!, time, sourceTrackId, ctx, sourceSkillType, sourceSkillId);
       }
 
       if (resolved.kind === 'consume') {

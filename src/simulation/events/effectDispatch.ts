@@ -226,13 +226,17 @@ export function evaluateEffectCondition(
   }
   if (cond.kind === 'operatorStatus') {
     const statuses = Array.isArray(cond.status) ? cond.status : [cond.status];
+    // 'controlled' reads the status from the operator controlled at this time; otherwise the source.
+    const readTrackId =
+      cond.target === 'controlled' ? ctx.getControlledOperatorAt(time) : sourceTrackId;
     return statuses.some(s => {
       if (cond.consumeScope === 'team') {
         const getStacks = (id: string) => getOperatorStatusStacks(s, id, time, ctx);
         if (!cond.stacks) return ctx.allTrackIds.some(id => getStacks(id) > 0);
         return ctx.allTrackIds.some(id => checkStacks(getStacks(id), cond.stacks));
       }
-      const stacks = getOperatorStatusStacks(s, sourceTrackId, time, ctx);
+      if (!readTrackId) return false;
+      const stacks = getOperatorStatusStacks(s, readTrackId, time, ctx);
       if (!cond.stacks) return stacks > 0;
       return checkStacks(stacks, cond.stacks);
     });
@@ -418,13 +422,21 @@ export function scheduleConsumption(
   } else if (condition.kind === 'operatorStatus') {
     const statuses = Array.isArray(condition.status) ? condition.status : [condition.status];
     const stacksToConsume = typeof condition.consume === 'number' ? condition.consume : undefined;
+    // 'controlled' consumes from the operator controlled at this time; otherwise the source.
+    const consumeFromId =
+      condition.target === 'controlled' ? ctx.getControlledOperatorAt(time) : sourceId;
     for (const status of statuses) {
       // For consumption, resolve to id (string or by stat.modifier match)
       let id: string | undefined;
       if (typeof status === 'string') {
         id = status;
       } else if (status && 'modifier' in status) {
-        const trackIds = condition.consumeScope === 'team' ? ctx.allTrackIds : [sourceId];
+        const trackIds =
+          condition.consumeScope === 'team'
+            ? ctx.allTrackIds
+            : consumeFromId
+              ? [consumeFromId]
+              : [];
         for (const trackId of trackIds) {
           const entries = ctx.getOperatorEffects(trackId).getActiveEntries(time);
           const match = entries.find(
@@ -440,7 +452,12 @@ export function scheduleConsumption(
         }
       }
       if (!id) continue;
-      const trackIds = condition.consumeScope === 'team' ? ctx.allTrackIds : [sourceId];
+      const trackIds =
+        condition.consumeScope === 'team'
+          ? ctx.allTrackIds
+          : consumeFromId
+            ? [consumeFromId]
+            : [];
       const anyPresent = trackIds.some(
         trackId => ctx.getOperatorEffects(trackId).getStacks(id, time) > 0,
       );
@@ -544,6 +561,7 @@ export function resolveTargetTrackIds(
   allTrackIds: readonly string[],
   ownerTrackId?: string,
   elementByTrackId?: ReadonlyMap<string, string | undefined>,
+  controlledTrackId?: string | null,
 ): string[] {
   const scope = getEffectTargetScope(effect) ?? 'self';
   switch (scope) {
@@ -551,6 +569,8 @@ export function resolveTargetTrackIds(
       return [selfTrackId];
     case 'owner':
       return [ownerTrackId ?? selfTrackId];
+    case 'controlled':
+      return controlledTrackId ? [controlledTrackId] : [];
     case 'team':
       return allTrackIds as string[];
     case 'teamExcludeSelf':
@@ -1037,6 +1057,7 @@ export function dispatchSingleActorEffect(
   const enemySnap = dc.enemySnap ?? ctx.state.enemy.statusSnapshot();
   const selfTrackId = dc.selfTrackId ?? sourceTrackId;
   const ownerTrackId = dc.ownerTrackId ?? sourceTrackId;
+  const controlledTrackId = ctx.getControlledOperatorAt?.(time) ?? null;
 
   // ── cooldownReduction ──────────────────────────────────────────────────
   if (resolved.kind === 'cooldownReductionFlat' || resolved.kind === 'cooldownReductionPercent') {
@@ -1046,6 +1067,7 @@ export function dispatchSingleActorEffect(
       ctx.allTrackIds,
       ownerTrackId,
       ctx.elementByTrackId,
+      controlledTrackId,
     );
     for (const targetId of targets) {
       dc.applyCooldownReduction?.(resolved as any, time, targetId, ctx);
@@ -1075,6 +1097,7 @@ export function dispatchSingleActorEffect(
       ctx.allTrackIds,
       ownerTrackId,
       ctx.elementByTrackId,
+      controlledTrackId,
     );
     const oneTimeDuration = resolveEffectLifecycle(resolved).duration;
     const expiresAt =
@@ -1221,6 +1244,7 @@ export function dispatchSingleActorEffect(
       ctx.allTrackIds,
       ownerTrackId,
       ctx.elementByTrackId,
+      controlledTrackId,
     );
     const spEff = resolved as ResolvedSpGainEffect | ResolvedSpReturnEffect;
     const gain = spEff.scaling
@@ -1264,6 +1288,7 @@ export function dispatchSingleActorEffect(
       ctx.allTrackIds,
       ownerTrackId,
       ctx.elementByTrackId,
+      controlledTrackId,
     );
     const ue = resolved as ResolvedUltimateEnergyGainEffect;
     const gain = ue.scaling
@@ -1301,6 +1326,7 @@ export function dispatchSingleActorEffect(
       ctx.allTrackIds,
       ownerTrackId,
       ctx.elementByTrackId,
+      controlledTrackId,
     );
     const lifecycle = resolveEffectLifecycle(resolved);
     const duration =

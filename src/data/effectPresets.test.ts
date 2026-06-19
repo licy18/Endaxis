@@ -1,8 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { getEffectColor, getEffectIcon, getEffectName } from './effectPresets';
+import { i18n } from '@/i18n';
 import type { Effect } from './types';
 
 describe('effect display presets', () => {
+  // getEffectName resolves through i18n; these assertions use the zh-CN names, so pin the locale
+  // (the test environment otherwise defaults to 'en', which has its own English names).
+  let prevLocale: typeof i18n.global.locale.value;
+  beforeAll(() => {
+    prevLocale = i18n.global.locale.value;
+    i18n.global.locale.value = 'zh-CN';
+  });
+  afterAll(() => {
+    i18n.global.locale.value = prevLocale;
+  });
+
   it('renders negative dmgBonus with element-specific damage-down icons', () => {
     const cases = [
       ['physical', '/icons/icon_battle_affix_physical_vulnerable.webp', '物理伤害降低'],

@@ -8,6 +8,7 @@ import type { ResolvedTimeline } from '../compiler/types.ts';
 import type { EnemyStateEvent, OperatorStateEvent } from '../engine/types.ts';
 import type { BaseStatValues } from '@/data/stats/types';
 import { createDefaultEnemyResistance } from '@/data/enemyResistance';
+import type { ControlSegment } from '@/stores/timeline/controlledOperator';
 
 type SimEventHook = (event: SimEvent, ctx: EventHookContext) => void;
 
@@ -40,6 +41,18 @@ export class SimulationEngine {
   endlineTime?: number;
   /** LMDI attribution mode for reaction debuff contributions. */
   lmdiAttributionMode: 'stacks' | 'applier' = 'stacks';
+  /** Controlled-operator timeline (time-ascending segments). Empty = nobody controlled. */
+  controlledOperatorSegments: ControlSegment[] = [];
+
+  /** Resolve the controlled operator (track id) at `time`: the last segment starting at or before it. */
+  private getControlledOperatorAt(time: number): string | null {
+    let current = this.controlledOperatorSegments[0]?.operatorId ?? null;
+    for (const seg of this.controlledOperatorSegments) {
+      if (seg.startTime <= time) current = seg.operatorId;
+      else break;
+    }
+    return current;
+  }
 
   constructor(
     private timeline: ResolvedTimeline,
@@ -272,6 +285,7 @@ export class SimulationEngine {
       enemyDef: this.enemyDef,
       enemyResistance: this.enemyResistance,
       lmdiAttributionMode: this.lmdiAttributionMode,
+      getControlledOperatorAt: (time: number) => this.getControlledOperatorAt(time),
     };
 
     while (!this.queue.isEmpty()) {

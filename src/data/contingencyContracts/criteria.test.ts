@@ -540,3 +540,123 @@ describe('CC trigger clone fidelity (Infinity durations)', () => {
     });
   }
 });
+
+// ─── Heat Loss (队列：失温 / 热流失) — groups 1003 / 1004 ──────────────────────
+describe('Heat Loss (groups 1003 / 1004) mechanism data', () => {
+  const cases = [
+    { group: 1003, skill: 'battleSkill' },
+    { group: 1004, skill: 'comboSkill' },
+  ] as const;
+
+  for (const { group, skill } of cases) {
+    const mech = CRITERION_MECHANISMS[group]!;
+
+    it(`group ${group} has 2 levels and level-specific cast triggers`, () => {
+      expect(mech.levelCount).toBe(2);
+      expect(mech.triggersByLevel).toHaveLength(2);
+    });
+
+    it(`group ${group} cast triggers fire on global ${skill} casts`, () => {
+      for (const lvl of mech.triggersByLevel!) {
+        const cast = lvl[0]!.trigger as any;
+        expect(cast.kind).toBe('onActionStart');
+        expect(cast.skillTypes).toBe(skill);
+        expect(cast.triggerScope).toBe('global');
+      }
+    });
+
+    it(`group ${group} applies a display-only Cryo status to the controlled operator`, () => {
+      // Level 2 (idx 1) adds a stack every cast.
+      const effects = mech.triggersByLevel![1]![0]!.effects as any[];
+      const cryo = effects.find(e => e.id === `cc:${group}:cryo`)!;
+      expect(cryo.target).toBe('controlled');
+      expect(cryo.maxStacks).toBe(4);
+      expect(cryo.icd).toBe(3);
+      expect(cryo.stat).toBeUndefined(); // no damage modifier — display only
+    });
+
+    it(`group ${group} level 1 gates every 2 casts via an enemy toggle`, () => {
+      const effects = mech.triggersByLevel![0]![0]!.effects as any[];
+      const bank = effects.find(e => e.id === `cc:${group}:toggle`)!;
+      expect(bank.target).toBe('enemy');
+      expect(bank.duration).toBe(Infinity);
+      expect(bank.condition).toEqual({
+        kind: 'not',
+        condition: { kind: 'enemyStatus', status: `cc:${group}:toggle` },
+      });
+      const cryo = effects.find(e => e.id === `cc:${group}:cryo`)!;
+      // Compound AND: consume the toggle; only when the controlled operator is not Frozen and not immune.
+      expect(cryo.condition).toEqual([
+        { kind: 'enemyStatus', status: `cc:${group}:toggle`, consume: true },
+        {
+          kind: 'not',
+          condition: { kind: 'operatorStatus', status: 'cc:frozen', target: 'controlled' },
+        },
+        {
+          kind: 'not',
+          condition: {
+            kind: 'operatorStatus',
+            status: 'cryo-infliction-immune',
+            target: 'controlled',
+          },
+        },
+      ]);
+    });
+
+    it(`group ${group} converts to Frozen on the 4th Cryo stack (consume all)`, () => {
+      const freeze = mech.triggers![0]!;
+      expect((freeze.trigger as any).kind).toBe('onStatusApplied');
+      expect((freeze.trigger as any).status).toBe(`cc:${group}:cryo`);
+      const frozen = freeze.effects[0] as any;
+      expect(frozen.id).toBe('cc:frozen');
+      expect(frozen.target).toBe('controlled');
+      expect(frozen.stat).toBeUndefined();
+      expect(frozen.condition).toEqual({
+        kind: 'operatorStatus',
+        status: `cc:${group}:cryo`,
+        target: 'controlled',
+        stacks: { compare: 'atLeast', count: 4 },
+        consume: true,
+      });
+    });
+  }
+});
+
+// ─── Lysis family (融化/升华/电解/切削) — groups 1017 / 1018 / 1019 / 1024 ──────
+describe('Lysis family (groups 1017 / 1018 / 1019 / 1024) mechanism data', () => {
+  const cases = [
+    { group: 1017, element: 'heat' },
+    { group: 1018, element: 'nature' },
+    { group: 1019, element: 'electric' },
+    { group: 1024, element: 'physical' },
+  ] as const;
+
+  for (const { group, element } of cases) {
+    const mech = CRITERION_MECHANISMS[group]!;
+
+    it(`group ${group} extends the shared Freeze to 15s (silent re-apply)`, () => {
+      const extend = mech.triggers!.find(
+        te => (te.trigger as any).kind === 'onStatusApplied' && (te.trigger as any).status === 'cc:frozen',
+      )!;
+      const eff = extend.effects[0] as any;
+      expect(eff.id).toBe('cc:frozen');
+      expect(eff.target).toBe('controlled');
+      expect(eff.duration).toBe(15);
+      expect(eff.stackStrategy).toBe('REPLACE');
+      expect(eff.silent).toBe(true); // avoids re-firing onStatusApplied (no extend loop)
+    });
+
+    it(`group ${group} dispels Freeze on a ${element}-element cast`, () => {
+      const dispel = mech.triggers!.find(te => (te.trigger as any).kind === 'onActionStart')!;
+      expect((dispel.trigger as any).element).toBe(element);
+      expect((dispel.trigger as any).triggerScope).toBe('global');
+      const eff = dispel.effects[0] as any;
+      expect(eff.condition).toEqual({
+        kind: 'operatorStatus',
+        status: 'cc:frozen',
+        target: 'controlled',
+        consume: true,
+      });
+    });
+  }
+});
