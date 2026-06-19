@@ -5,7 +5,7 @@ const sheet: EnemySheet = {
   gameId: 'eny_0051_rodin',
   avatar: '/Icon_Enemy/eny_0051_rodin.webp',
   category: '裂地者',
-  tier: 'boss',
+  tier: 'leader',
   levelHp: {
     1: 3461,
     20: 24839,

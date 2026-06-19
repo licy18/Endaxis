@@ -229,14 +229,16 @@ export function compileScenario(
       executionRecovery: mergedSystemConstants.executionRecovery,
       finisherRecovery: mergedSystemConstants.executionRecovery,
       finisherMultiplier:
-        (mergedSystemConstants as any).finisherMultiplier ??
-        (mergedSystemConstants.tier === "boss"
-          ? 1.75
-          : mergedSystemConstants.tier === "elite"
-            ? 1.5
-            : mergedSystemConstants.tier === "advanced"
-              ? 1.25
-              : 1),
+          (mergedSystemConstants as any).finisherMultiplier ??
+          (mergedSystemConstants.tier === "leader"
+              ? 1.75
+              : mergedSystemConstants.tier === "boss"
+                  ? 1.5
+                  : mergedSystemConstants.tier === "elite"
+                      ? 1.25
+                      : mergedSystemConstants.tier === "advanced"
+                          ? 1.1
+                          : 1),
       defense: mergedSystemConstants.defense,
       tier: mergedSystemConstants.tier,
       resistance: normalizeEnemyResistance(mergedSystemConstants.resistance),

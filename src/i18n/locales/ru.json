@@ -420,10 +420,10 @@
   },
   "enemyTier": {
     "normal": "Обычный",
+    "advanced": "Продвинутый",
     "elite": "Элитный",
-    "champion": "Чемпион",
-    "head": "Главарь",
-    "boss": "Босс"
+    "boss": "Босс",
+    "leader": "Лидер"
   },
   "contextMenu": {
     "lockPosition": "Заблокировать",

@@ -908,7 +908,7 @@ export interface EnemySheet {
   gameId: string;
   avatar: string;
   category: string;
-  tier: 'boss' | 'champion' | 'elite' | 'normal';
+  tier: 'normal' | 'advanced' | 'elite' | 'boss' | 'leader';
   levelHp: Record<number, number>;
   def: number;
   resistance: Record<DamageElement, number>;

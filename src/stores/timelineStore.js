@@ -386,10 +386,10 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     const ENEMY_TIERS = [
         { labelKey: 'enemyTier.normal', label: 'Normal', value: 'normal', color: '#a0a0a0' },
-        { labelKey: 'enemyTier.elite', label: 'Elite', value: 'elite', color: '#52c41a' },
-        { labelKey: 'enemyTier.champion', label: 'Champion', value: 'champion', color: '#d8b4fe' },
-        { labelKey: 'enemyTier.head', label: 'Head', value: 'head', color: '#ffd700' },
-        { labelKey: 'enemyTier.boss', label: 'Boss', value: 'boss', color: '#ff4d4f' }
+        { labelKey: 'enemyTier.advanced', label: 'Advanced', value: 'advanced', color: '#52c41a' },
+        { labelKey: 'enemyTier.elite', label: 'Elite', value: 'elite', color: '#d8b4fe' },
+        { labelKey: 'enemyTier.boss', label: 'Boss', value: 'boss', color: '#ffd700' },
+        { labelKey: 'enemyTier.leader', label: 'Leader', value: 'leader', color: '#ff4d4f' },
     ]
     // ===================================================================================
     // Core reactive state

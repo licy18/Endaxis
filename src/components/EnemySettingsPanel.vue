@@ -12,7 +12,13 @@ const { t, locale } = useI18n({ useScope: 'global' })
 const { enemyDatabase, enemyCategories } = storeToRefs(store)
 
 const ENEMY_TIERS = store.ENEMY_TIERS
-const TIER_WEIGHTS = { boss: 5, head: 4, champion: 3, elite: 2, normal: 1 }
+const TIER_WEIGHTS = {
+  leader: 5,
+  boss: 4,
+  elite: 3,
+  advanced: 2,
+  normal: 1,
+}
 const ENEMY_RESISTANCE_ELEMENTS = ['physical', 'heat', 'cryo', 'electric', 'nature']
 const ENEMY_LEVELS = [1, 20, 40, 60, 80, 90]
 const CATEGORY_ALL = '__ALL__'
@@ -247,7 +253,7 @@ function setEnemyLevel(level) {
                 </div>
               </div>
               <div class="enemy-info">
-                <div class="name" :style="{ color: enemy.tier === 'boss' ? '#ff4d4f' : (enemy.tier === 'head' ? '#ffd700' : '#f0f0f0') }">
+                <div class="name" :style="{ color: enemy.tier === 'leader' ? '#ff4d4f' : (enemy.tier === 'boss' ? '#ffd700' : '#f0f0f0') }">
                   {{ enemy.name }}
                 </div>
                 <div class="desc">{{ t('resourceMonitor.enemy.desc', { max: enemy.maxStagger, nodes: enemy.staggerNodeCount }) }}</div>

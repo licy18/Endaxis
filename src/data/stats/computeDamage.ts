@@ -226,10 +226,11 @@ export const STAGGER_DAMAGE_MULTIPLIER = 1.3;
 // ─── Finisher multiplier by enemy tier ─────────────────────────────────────
 
 export const FINISHER_MULTIPLIER_BY_TIER: Record<string, number> = {
-  common: 1.0,
+  normal: 1.0,
   advanced: 1.25,
-  elite: 1.5,
-  boss: 1.75,
+  elite: 1.25,
+  boss: 1.5,
+  leader: 1.75,
 };
 
 // ─── Main damage calculation ────────────────────────────────────────────────

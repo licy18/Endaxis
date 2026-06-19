@@ -420,10 +420,10 @@
   },
   "enemyTier": {
     "normal": "Normal",
+    "advanced": "Advanced",
     "elite": "Elite",
-    "champion": "Champion",
-    "head": "Head",
-    "boss": "Boss"
+    "boss": "Boss",
+    "leader": "Leader"
   },
   "contextMenu": {
     "lockPosition": "Lock Position",
