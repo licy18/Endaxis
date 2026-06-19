@@ -156,6 +156,102 @@ watch(activeSeasonId, () => {
   selectedTagIds.value = new Set()
 })
 
+type ContractDescriptionPart = {
+  text: string
+  highlighted: boolean
+}
+
+function getTagBlackboardValue(tag: ContingencyContractTag, key: string): number | null {
+  for (const term of tag.terms) {
+    const entry = term.blackboard.find(item => item.key === key)
+    if (entry) return Number(entry.value)
+  }
+  return null
+}
+
+function evaluateContractExpression(expression: string, tag: ContingencyContractTag): number | null {
+  const tokens = expression.match(/[+-]?[^+-]+/g) ?? []
+  if (tokens.length === 0) return null
+
+  let total = 0
+  for (const rawToken of tokens) {
+    const sign = rawToken.startsWith('-') ? -1 : 1
+    const token = rawToken.replace(/^[+-]/, '').trim()
+    if (!token) continue
+
+    const numeric = Number(token)
+    if (Number.isFinite(numeric)) {
+      total += sign * numeric
+      continue
+    }
+
+    const value = getTagBlackboardValue(tag, token)
+    if (value == null || !Number.isFinite(value)) return null
+    total += sign * value
+  }
+
+  return total
+}
+
+function formatContractValue(value: number, format: string): string {
+  if (format === '0%') return `${Math.round(value * 100)}%`
+  if (format === '0') return `${Math.round(value)}`
+  return `${value}`
+}
+
+function resolveContractPlaceholder(content: string, currentTag: ContingencyContractTag): string {
+  let targetTag = currentTag
+  let expressionWithFormat = content
+
+  const referenceMatch = content.match(/^@(\d+)@(.+)$/)
+  if (referenceMatch?.[1] && referenceMatch[2]) {
+    targetTag = activeTagMap.value.get(Number(referenceMatch[1])) ?? currentTag
+    expressionWithFormat = referenceMatch[2]
+  }
+
+  const separatorIndex = expressionWithFormat.lastIndexOf(':')
+  if (separatorIndex < 0) return ''
+
+  const expression = expressionWithFormat.slice(0, separatorIndex)
+  const format = expressionWithFormat.slice(separatorIndex + 1)
+  const value = evaluateContractExpression(expression, targetTag)
+  return value == null ? '' : formatContractValue(value, format)
+}
+
+function renderDescriptionText(text: string, tag: ContingencyContractTag): string {
+  return text
+    .replace(/\{([^}]+)\}/g, (_, content: string) => resolveContractPlaceholder(content, tag))
+    .replace(/<[^>]+>/g, '')
+}
+
+function renderContractDescriptionParts(tag: ContingencyContractTag): ContractDescriptionPart[] {
+  const raw = tag.rawDescription || tag.description || t('contingencyContract.noDescription')
+  const parts: ContractDescriptionPart[] = []
+  const colorPattern = /<color=[^>]+>(.*?)<\/color>/g
+  let cursor = 0
+  let match: RegExpExecArray | null
+
+  while ((match = colorPattern.exec(raw)) != null) {
+    if (match.index > cursor) {
+      const text = renderDescriptionText(raw.slice(cursor, match.index), tag)
+      if (text) parts.push({ text, highlighted: false })
+    }
+
+    const text = renderDescriptionText(match[1] ?? '', tag)
+    if (text) parts.push({ text, highlighted: true })
+    cursor = match.index + match[0].length
+  }
+
+  if (cursor < raw.length) {
+    const text = renderDescriptionText(raw.slice(cursor), tag)
+    if (text) parts.push({ text, highlighted: false })
+  }
+
+  return parts.length > 0
+    ? parts
+    : [{ text: tag.description || t('contingencyContract.noDescription'), highlighted: false }]
+}
+
 function getDisabledReason(tag: ContingencyContractTag): string {
   const season = activeSeason.value
   return season ? getContractTagDisabledReason(season, tag, selectedTagIds.value) : ''
@@ -268,7 +364,13 @@ function hideBrokenImage(event: Event) {
               <template #content>
                 <div class="cc-tag-tooltip">
                   <div class="cc-tag-tooltip-title">{{ cell.tag.name }}</div>
-                  <div v-if="cell.tag.description" class="cc-tag-tooltip-desc">{{ cell.tag.description }}</div>
+                  <div class="cc-tag-tooltip-desc">
+                    <span
+                      v-for="(part, index) in renderContractDescriptionParts(cell.tag)"
+                      :key="`${cell.tag.id}-tooltip-desc-${index}`"
+                      :class="{ 'is-highlight': part.highlighted }"
+                    >{{ part.text }}</span>
+                  </div>
                 </div>
               </template>
               <button
@@ -297,7 +399,12 @@ function hideBrokenImage(event: Event) {
             <img src="/contingency_contract/deco_contract_027.webp" alt="" aria-hidden="true" />
             <strong>{{ selectedScore }}</strong>
           </div>
-          <button type="button" class="cc-clear-btn" :disabled="selectedTags.length === 0" @click="clearSelection">
+          <button
+            type="button"
+            class="ea-btn ea-btn--sm ea-btn--lift ea-btn--outline-muted cc-clear-btn"
+            :disabled="selectedTags.length === 0"
+            @click="clearSelection"
+          >
             {{ t('common.reset') }}
           </button>
         </div>
@@ -306,10 +413,16 @@ function hideBrokenImage(event: Event) {
             <img v-if="tag.iconPath" :src="tag.iconPath" alt="" aria-hidden="true" @error="hideBrokenImage" />
             <div class="cc-selected-content">
               <div class="cc-selected-title">
-                <span>{{ t('contingencyContract.queue') }}：{{ tag.name }}</span>
+                <span>{{ tag.name }}</span>
                 <b>+{{ tag.score }}</b>
               </div>
-              <div class="cc-selected-desc">{{ tag.description || t('contingencyContract.noDescription') }}</div>
+              <div class="cc-selected-desc">
+                <span
+                  v-for="(part, index) in renderContractDescriptionParts(tag)"
+                  :key="`${tag.id}-selected-desc-${index}`"
+                  :class="{ 'is-highlight': part.highlighted }"
+                >{{ part.text }}</span>
+              </div>
             </div>
             <button
               type="button"
@@ -343,17 +456,9 @@ function hideBrokenImage(event: Event) {
 
 .cc-clear-btn {
   height: 22px;
-  padding: 0 7px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.045);
-  color: rgba(255, 255, 255, 0.7);
+  --ea-btn-py: 0;
+  --ea-btn-px: 9px;
   font-size: 10px;
-  cursor: pointer;
-}
-
-.cc-clear-btn:disabled {
-  opacity: 0.36;
-  cursor: default;
 }
 
 .cc-body {
@@ -605,6 +710,11 @@ function hideBrokenImage(event: Event) {
   overflow: hidden;
 }
 
+.cc-selected-desc .is-highlight {
+  color: #ffdb64;
+  font-weight: 900;
+}
+
 .cc-selected-remove {
   align-self: center;
 }
@@ -652,5 +762,10 @@ function hideBrokenImage(event: Event) {
   color: rgba(255, 255, 255, 0.68);
   font-size: 11px;
   line-height: 1.4;
+}
+
+:global(.cc-tag-tooltip-desc .is-highlight) {
+  color: #ffdb64;
+  font-weight: 900;
 }
 </style>

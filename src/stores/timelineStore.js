@@ -48,7 +48,7 @@ import {
     getWeaponSkillName,
 } from '@/data/gameText'
 import { getTeamStatus, statusToKey } from '@/data/team-status'
-import { buildEffectById, collectEffects, collectTriggerEffects, patchCombatSkills, resolveEffect, resolveTriggerEffectLevel } from '@/data/collect'
+import { buildEffectById, collectEffects, collectTriggerEffects, patchCombatSkills, resolveEffect, resolveStatAttributes, resolveTriggerEffectLevel } from '@/data/collect'
 import { CRITERION_MECHANISMS } from '@/data/contingencyContracts/criteriaEffects'
 import { isEnemyEffect } from '@/data/types'
 import { createDefaultEnemyResistance, normalizeEnemyResistance } from '@/data/enemyResistance'
@@ -1959,6 +1959,8 @@ export const useTimelineStore = defineStore('timeline', () => {
                 operatorSlug: opInst.operatorSlug,
                 class: operatorSheet?.class || null,
                 element: operatorSheet?.element || null,
+                mainAttribute: operatorSheet?.mainAttribute || operatorSheet?.primaryAttribute || null,
+                subAttribute: operatorSheet?.subAttribute || operatorSheet?.secondaryAttribute || null,
             })
 
             if (!operatorIds.has(opInst.id)) {
@@ -2043,17 +2045,25 @@ export const useTimelineStore = defineStore('timeline', () => {
                 ce.sourceSlotIndex,
                 armoryContext.slotTrackIds,
                 armoryContext.trackMetaById,
-            ).filter((targetId) => targetId !== 'boss').map((targetId) => ({
-                targetTrackId: targetId,
-                id: effect.id,
-                stat: effect.stat,
-                value,
-                sourceId: sourceActorId,
-                effect: runtimeEffect,
-                stacks: effect.stacks,
-                maxStacks: effect.maxStacks,
-                stackStrategy: effect.stackStrategy,
-            }))
+            ).filter((targetId) => targetId !== 'boss').map((targetId) => {
+                const targetMeta = armoryContext.trackMetaById.get(targetId)
+                const resolvedStat = resolveStatAttributes(
+                    effect.stat,
+                    targetMeta?.mainAttribute,
+                    targetMeta?.subAttribute,
+                )
+                return {
+                    targetTrackId: targetId,
+                    id: effect.id,
+                    stat: resolvedStat,
+                    value,
+                    sourceId: sourceActorId,
+                    effect: { ...runtimeEffect, stat: resolvedStat },
+                    stacks: effect.stacks,
+                    maxStacks: effect.maxStacks,
+                    stackStrategy: effect.stackStrategy,
+                }
+            })
         })
     }
 
@@ -5116,6 +5126,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                 switchEvents,
                 inheritedInitialEffects,
                 inheritedInitialEnemyState,
+                contingencyContractTags,
                 () => operatorStore.operators,
                 () => weaponStore.weapons,
                 () => gearStore.gears
@@ -5135,6 +5146,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                  newSwEvents,
                  newInheritedInitialEffects,
                  newInheritedInitialEnemyState,
+                 newContingencyContractTags,
                  newOperators,
                  newWeapons,
                  newGears
@@ -5167,6 +5179,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                         switchEvents: newSwEvents,
                         inheritedInitialEffects: newInheritedInitialEffects,
                         inheritedInitialEnemyState: newInheritedInitialEnemyState,
+                        contingencyContractTags: newContingencyContractTags,
                     }
                 }
 
