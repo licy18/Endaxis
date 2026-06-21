@@ -4658,11 +4658,10 @@ export const useTimelineStore = defineStore('timeline', () => {
     })
 
     function openContextMenu(evt, instanceId = null, time = 0, targetType = null) {
-        const timelinePos = toTimelineSpace(evt.clientX, evt.clientY)
         contextMenu.value = {
             visible: true,
-            x: timelinePos.x,
-            y: timelinePos.y,
+            x: evt.clientX,
+            y: evt.clientY,
             targetId: instanceId,
             targetType,
             time

@@ -145,12 +145,13 @@ function handleAddCycleBoundary() {
 </script>
 
 <template>
-  <div v-if="store.contextMenu.visible"
-       class="custom-context-menu"
-       :style="menuStyle"
-       @click.stop
-       @contextmenu.prevent
-       @mousedown.stop>
+  <Teleport to="body">
+    <div v-if="store.contextMenu.visible"
+         class="custom-context-menu"
+         :style="menuStyle"
+         @click.stop
+         @contextmenu.prevent
+         @mousedown.stop>
 
     <template v-if="targetAction">
       <div class="menu-header">{{ targetAction.name }}</div>
@@ -353,7 +354,8 @@ function handleAddCycleBoundary() {
       </div>
     </template>
 
-  </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>

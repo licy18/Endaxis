@@ -281,6 +281,7 @@ function getTrackBuffAdjustedRowMetrics(index, basePadding, requestedRowHeight) 
 }
 
 function beginTrackResize(index, event) {
+  if (event.button !== 0) return
   event.preventDefault()
   const rowHeights = trackRowHeights.value
   if (!rowHeights[index] || !rowHeights[index + 1]) return
@@ -2878,7 +2879,11 @@ onUnmounted(() => {
           :key="`track-divider-${index}`"
           class="track-divider-handle"
           :class="{ 'is-active': draggingTrackResizeIndex === index }"
-          :style="{ top: `${offset - store.timelineScrollTop}px` }"
+          :style="{
+            top: `${offset - store.timelineScrollTop}px`,
+            left: `${prepZoneWidthPxRounded}px`,
+            '--track-divider-prep-offset': `${prepZoneWidthPxRounded}px`,
+          }"
           @pointerdown.stop="beginTrackResize(index, $event)"
           @dblclick.stop="resetTrackLayoutWeights"
         >
@@ -4289,14 +4294,13 @@ body.capture-mode .davinci-range {
   position: absolute;
   inset: 0 0 12px 0;
   pointer-events: none;
-  z-index: 35;
+  z-index: 1;
 }
 
 .track-divider-handle {
   position: absolute;
-  left: 0;
   right: 0;
-  height: 16px;
+  height: 6px;
   transform: translateY(-50%);
   cursor: ns-resize;
   pointer-events: auto;
@@ -4304,10 +4308,11 @@ body.capture-mode .davinci-range {
 
 .track-divider-line {
   position: absolute;
-  left: 0;
+  left: calc(-1 * var(--track-divider-prep-offset, 0px));
   right: 0;
   top: 50%;
   height: 1px;
+  pointer-events: none;
   background: rgba(255, 255, 255, 0.08);
   transform: translateY(-50%);
   transition: background-color 0.12s ease, box-shadow 0.12s ease;
