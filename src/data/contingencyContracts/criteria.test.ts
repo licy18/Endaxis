@@ -572,7 +572,8 @@ describe('Heat Loss (groups 1003 / 1004) mechanism data', () => {
       const cryo = effects.find(e => e.id === sharedCryoId)!;
       expect(cryo.target).toBe('controlled');
       expect(cryo.maxStacks).toBe(4);
-      expect(cryo.icd).toBe(3);
+      expect(cryo.icd).toBe(1);
+      expect(cryo.icdGroup).toBe(sharedCryoId);
       expect(cryo.displayType).toBe('cryo_infliction');
       expect(cryo.stat).toBeUndefined(); // no damage modifier — display only
     });
@@ -582,6 +583,7 @@ describe('Heat Loss (groups 1003 / 1004) mechanism data', () => {
       const bank = effects.find(e => e.id === `cc:${group}:toggle`)!;
       expect(bank.target).toBe('enemy');
       expect(bank.duration).toBe(Infinity);
+      expect(bank.icd).toBe(1);
       expect(bank.condition).toEqual({
         kind: 'not',
         condition: { kind: 'enemyStatus', status: `cc:${group}:toggle` },

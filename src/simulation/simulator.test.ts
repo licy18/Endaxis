@@ -1445,7 +1445,7 @@ describe("Heat Loss criterion end-to-end (group 1003)", () => {
       triggerEffect: te,
     }));
 
-  // Caster A controlled throughout; casts spaced 4s apart so each clears the per-caster 3s icd.
+  // Caster A controlled throughout; most casts are spaced well beyond the per-caster 1s ICD.
   function run(idx: number, castTimes: number[], initialEffects?: any[]) {
     const actions = castTimes.map((t, i) =>
       createAction(`bs${i}`, "battleSkill", { startTime: t }),
@@ -1493,14 +1493,54 @@ describe("Heat Loss criterion end-to-end (group 1003)", () => {
     expect(applies("cc:frozen")).toHaveLength(0);
   });
 
-  it("per-caster 3s recast cooldown: casts within 3s are not counted", () => {
-    // Casts at 0/1/2 are all <3s after the first → only the first counts → a single Cryo stack.
-    const { applies } = run(1, [0, 1, 2]);
-    expect(applies(heatLossCryoId)).toHaveLength(1);
+  it("per-caster 1s recast cooldown: sub-second casts are ignored", () => {
+    const { applies } = run(1, [0, 0.5, 1, 1.5, 2]);
+    expect(applies(heatLossCryoId).map((e) => e.time)).toEqual([0, 1, 2]);
+  });
+
+  it("shares the 1s Cryo cooldown across Heat Loss criteria and trigger sources", () => {
+    const tracks = [
+      createTrack("A", [
+        createAction("a-bs-0", "battleSkill", { startTime: 0 }),
+        createAction("a-bs-1", "battleSkill", { startTime: 1 }),
+      ]),
+      createTrack("B", [createAction("b-cs", "comboSkill", { startTime: 0.5 })]),
+    ];
+    const { timeline, teamConfig, enemyConfig, actors } = compileScenario(createScenario(tracks));
+    const baseStatsByTrack = new Map<string, BaseStatValues>(
+      actors.map((actor) => [actor.id, BASE_STATS]),
+    );
+    const result = simulate(
+      timeline,
+      teamConfig,
+      enemyConfig,
+      actors,
+      new TriggerRegistry([
+        {
+          sourceTrackId: "A",
+          triggerEffect: CRITERION_MECHANISMS[1003]!.triggersByLevel![1]![0]!,
+        },
+        {
+          sourceTrackId: "B",
+          triggerEffect: CRITERION_MECHANISMS[1004]!.triggersByLevel![1]![0]!,
+        },
+      ]),
+      undefined,
+      {
+        baseStatsByTrack,
+        enemyDef: 100,
+        controlledOperatorSegments: [{ startTime: 0, operatorId: "A" }],
+      },
+    );
+    const cryoTimes = result.operatorLog
+      .filter((event) => event.type === "OPERATOR_EFFECT_APPLY" && event.id === heatLossCryoId)
+      .map((event) => event.time);
+
+    expect(cryoTimes).toEqual([0, 1]);
   });
 
   it("blocks new Cryo stacks while the controlled operator is Frozen", () => {
-    // Freeze lands at t=12 (4th stack) and lasts 5s. The t=16 cast clears the 3s icd but is
+    // Freeze lands at t=12 (4th stack) and lasts 5s. The t=16 cast clears the 1s ICD but is
     // blocked by Frozen; the t=20 cast lands after Frozen expires and starts a fresh stack.
     const { applies } = run(1, [0, 4, 8, 12, 16, 20]);
     expect(applies(heatLossCryoId).map((e) => e.cumulativeStacks)).toEqual([1, 2, 3, 4, 1]);

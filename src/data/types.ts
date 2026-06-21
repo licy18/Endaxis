@@ -308,6 +308,8 @@ export interface EffectBase {
   condition?: EffectCondition | EffectCondition[];
   /** Internal cooldown in seconds — minimum interval between trigger activations. */
   icd?: number;
+  /** Optional shared ICD bucket. Effects with the same bucket share cooldown across sources. */
+  icdGroup?: string;
 
   // Identity
   id?: string;
@@ -500,6 +502,7 @@ export type PatchableEffectBaseFields = Pick<
   | 'stackStrategy'
   | 'condition'
   | 'icd'
+  | 'icdGroup'
   | 'hide'
 >;
 

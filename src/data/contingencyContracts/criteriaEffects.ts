@@ -15,7 +15,7 @@ export interface CriterionMechanism {
  * Heat Loss (队列：失温 / 热流失) — c1003 Battle Skill / c1004 Combo Skill.
  *
  * Every 2 (level 1) / every (level 2) qualifying skill cast by ANY operator — each cast gated by a
- * per-caster 3s recast cooldown (`icd`) — adds 1 Cryo Infliction stack to the CONTROLLED operator
+ * per-caster 1s recast cooldown (`icd`) — adds 1 Cryo Infliction stack to the CONTROLLED operator
  * (`target:'controlled'`); team-wide counting for level 1 uses a shared boolean toggle hosted on the
  * enemy. On the 4th stack all Cryo is consumed and converted to Freeze. Display-only: every status
  * here omits `stat`, so it never touches the damage model.
@@ -26,6 +26,7 @@ export interface CriterionMechanism {
 // effectively infinite for any real timeline while keeping those alive.
 const HEAT_LOSS_CRYO_DURATION = 1e9;
 const HEAT_LOSS_FROZEN_DURATION = 5;
+const HEAT_LOSS_ICD = 1;
 const HEAT_LOSS_CRYO_ID = 'cc:heat-loss:cryo';
 /** Shared operator-Freeze status id (one freeze state regardless of which source froze the operator),
  *  so the lysis criteria (Pyrolysis/Biolysis/Electrolysis/Physicolysis) can extend / dispel it. */
@@ -64,7 +65,8 @@ function heatLossMechanism(group: number, skillType: 'battleSkill' | 'comboSkill
       duration: HEAT_LOSS_CRYO_DURATION,
       displayType: 'cryo_infliction',
       icon: '/icons/icon_energy_fusion_cryst.webp',
-      icd: 3,
+      icd: HEAT_LOSS_ICD,
+      icdGroup: HEAT_LOSS_CRYO_ID,
       ...extra,
     }) as Effect;
   const castTrigger = (effects: Effect[]): TriggerEffect => ({
@@ -111,7 +113,7 @@ function heatLossMechanism(group: number, skillType: 'battleSkill' | 'comboSkill
             ignoreTimeShift: true,
             hide: true,
             silent: true,
-            icd: 3,
+            icd: HEAT_LOSS_ICD,
             condition: { kind: 'not', condition: { kind: 'enemyStatus', status: toggleId } },
           } as Effect,
           // cryo+: when the toggle is present (the "2nd"), consume it and add a Cryo stack —
