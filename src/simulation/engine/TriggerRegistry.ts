@@ -23,6 +23,7 @@ import {
   conditionHasConsume,
 } from '@/simulation/events/effectDispatch';
 import { passesSkillFilter } from '@/data/filter';
+import { resolveEffectiveActionSkillType } from '@/simulation/events/actionSkillType';
 import { statusToKey } from '@/data/team-status';
 
 interface TriggerRegistryEntry {
@@ -235,7 +236,8 @@ export class TriggerRegistry {
       if (trigger.kind !== 'onActionStart') continue;
       const t = trigger as Extract<TriggerEvent, { kind: 'onActionStart' }>;
       if (action) {
-        if (t.skillTypes && !passesSkillFilter(t.skillTypes, action.node.type)) continue;
+        const effectiveType = resolveEffectiveActionSkillType(action, event.time, actorId, ctx);
+        if (t.skillTypes && !passesSkillFilter(t.skillTypes, effectiveType)) continue;
         if (t.skillId && !passesSkillFilter(t.skillId, action.node.skillId)) continue;
         if (t.element) {
           const allowed = Array.isArray(t.element) ? t.element : [t.element];
@@ -265,7 +267,8 @@ export class TriggerRegistry {
       const { trigger } = entry.triggerEffect;
       if (trigger.kind !== 'duringAction') continue;
       const t = trigger as Extract<TriggerEvent, { kind: 'duringAction' }>;
-      if (t.skillTypes && !passesSkillFilter(t.skillTypes, action.node.type)) continue;
+      const effectiveType = resolveEffectiveActionSkillType(action, event.time, actorId, ctx);
+      if (t.skillTypes && !passesSkillFilter(t.skillTypes, effectiveType)) continue;
       if (t.skillId && !passesSkillFilter(t.skillId, action.node.skillId)) continue;
       const freezeDuration = action.freezeDuration ?? 0;
       this.dispatch(

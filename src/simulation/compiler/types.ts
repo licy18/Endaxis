@@ -271,6 +271,7 @@ export interface Action {
   duration: number;
   triggerWindow?: number;
   animationTime?: number;
+  treatAsSkillType?: ActionType;
   isDisabled?: boolean;
   weaponId?: string | null;
   sourceWeaponId?: string | null;

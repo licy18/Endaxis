@@ -1458,6 +1458,91 @@ describe("optimizer-native runtime parity", () => {
     expect(gaugeEntry?.payload.gauge).toBe(15);
   });
 
+  it("does not consume link stacks when the active action branch is treated as comboSkill", () => {
+    const readyStatus: Effect = {
+      id: "camille-hunter-pursuit-ready",
+      kind: "status",
+      target: "self",
+      duration: 10,
+    } as Effect;
+    const linkStatus: Effect = {
+      id: "two-link-stacks",
+      kind: "status",
+      stat: { modifier: "link" },
+      target: "team",
+      duration: 10,
+      stacks: 2,
+      maxStacks: 2,
+    } as Effect;
+    const result = runScenario([
+      createTrack("alpha", [
+        createAction("setup", "battleSkill", {
+          startTime: 0,
+          hits: [
+            {
+              offset: 0,
+              multiplier: 0,
+              spRecovery: 0,
+              spReturn: 0,
+              stagger: 0,
+              effects: [readyStatus, linkStatus],
+            },
+          ],
+        }),
+        createAction("pursuit", "battleSkill", {
+          startTime: 1,
+          hits: [
+            {
+              offset: 0,
+              multiplier: 100,
+              spRecovery: 0,
+              spReturn: 0,
+              stagger: 0,
+              _condition: {
+                kind: "not",
+                condition: { kind: "operatorStatus", status: "camille-hunter-pursuit-ready" },
+              },
+            },
+            {
+              offset: 0,
+              multiplier: 100,
+              spRecovery: 0,
+              spReturn: 0,
+              stagger: 0,
+              treatAsSkillType: "comboSkill",
+              _condition: { kind: "operatorStatus", status: "camille-hunter-pursuit-ready" },
+            },
+          ],
+        }),
+        createAction("consume", "battleSkill", {
+          startTime: 2,
+          hits: [{ offset: 0, multiplier: 100, spRecovery: 0, spReturn: 0, stagger: 0 }],
+        }),
+      ]),
+    ]);
+
+    const pursuitHit = result.simLog.find(
+      (entry: any) =>
+        entry.type === "DAMAGE_HIT" && entry.payload.actionId === "pursuit_inst",
+    ) as any;
+    const consumeHit = result.simLog.find(
+      (entry: any) =>
+        entry.type === "DAMAGE_HIT" && entry.payload.actionId === "consume_inst",
+    ) as any;
+
+    expect(pursuitHit?.payload.hitData.skillType).toBe("comboSkill");
+    expect(pursuitHit?.payload.hitData.consumedStacks?.link).toBeUndefined();
+    expect(consumeHit?.payload.hitData.consumedStacks).toEqual({ link: 2 });
+    expect(result.simLog).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          type: "LINK_CONSUMED",
+          payload: expect.objectContaining({ actionId: "pursuit_inst" }),
+        }),
+      ]),
+    );
+  });
+
   it("blocks positive ultimate energy gains during own ultimate enhancement window", () => {
     const simulation = runScenario([
       createTrack(
