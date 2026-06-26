@@ -424,8 +424,8 @@ export const CRITERION_MECHANISMS: Record<number, CriterionMechanism> = {
 
   // Thrill (改写：刺激) — enemy DMG dealt +30% / +80%.
   1002: { levelCount: 2 },
-  // Time Limit (环境：时限) — countdown -100s / -200s.
-  1021: { levelCount: 2 },
+  // Time Limit (环境：时限) — countdown -100s / -200s / -300s.
+  1021: { levelCount: 3 },
   // Vitality (改写：活性) — enemy HP +50% / +100% / +200%.
   9001: { levelCount: 3 },
   // Decapitate (队列：斩首) — controlled operator DMG taken +50% / +100%.
@@ -434,12 +434,18 @@ export const CRITERION_MECHANISMS: Record<number, CriterionMechanism> = {
   1013: { levelCount: 2 },
   // Withering (环境：枯萎) — fewer / no between-wave healing masses.
   1020: { levelCount: 2 },
+  // Reconstitution (环境：再构成) — elite enemy wave replacement.
+  1022: { levelCount: 2 },
   // Surge (改写：奔腾) — enemy move speed +100%; DMG taken capped at 25% max HP per 0.1s.
   1023: { levelCount: 1 },
   // Sync Growth (环境：同步生长) — controlled operator heal/shield heals on-field enemies 8% max HP.
   1033: { levelCount: 1 },
+  // Burden (队列：重负) — no heavy-hit state pauses natural ATB recovery for 12s.
+  1034: { levelCount: 1 },
   // Exhaustion (队列：衰竭) — DMG taken converts to max-HP loss (melee 30% / ranged 50%).
   1014: { levelCount: 1 },
+  // Heat Draw (改写：热量汲取) — enemy Cryo infliction directly applies Freeze.
+  1016: { levelCount: 1 },
   // Partition (环境：分隔) — controlled operator cannot be switched once battle begins.
   1012: { levelCount: 1 },
   // Toxic Residue (改写：遗毒) — defeated enemy leaves a toxic patch (2% / 5% max HP per second).

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CRITERION_MECHANISMS } from '@/data/contingencyContracts/criteriaEffects';
+import { getDefaultContingencyContractSeason } from '@/data/contingencyContracts';
 import { computeStats } from '@/data/stats/computeStats';
 import {
   filterDamageModifiers,
@@ -61,6 +62,38 @@ function dmgBase() {
 }
 
 // ─── external mechanism (attributePercent) — Weaken/Strangle/Bent Edges ──────
+
+describe('contingency contract source data coverage', () => {
+  it('includes the latest new tags and groups from AKEDatabase', () => {
+    const season = getDefaultContingencyContractSeason();
+    expect(season).toBeTruthy();
+    const groups = new Map(season!.groups.map(group => [group.id, group]));
+    const tags = new Map(season!.groups.flatMap(group => group.tags.map(tag => [tag.id, tag])));
+
+    expect(groups.get('3')?.tags.map(tag => tag.id)).toEqual([102101, 102102, 102103]);
+    expect(groups.get('11')?.tags.map(tag => tag.id)).toEqual([103401, 103302, 101402]);
+    expect(groups.get('18')?.tags.map(tag => tag.id)).toEqual([101701, 101603]);
+    expect(groups.get('23')?.tags.map(tag => tag.id)).toEqual([102201, 102202]);
+
+    expect(tags.get(101603)).toMatchObject({
+      groupId: 1016,
+      name: '改写：热量汲取',
+      iconPath: '/contingency_contract/1/icon_activity_contract_tag_135.webp',
+      lockIds: ['key2'],
+    });
+    expect(tags.get(102103)).toMatchObject({ groupId: 1021, score: 3, roman: 'Ⅲ' });
+    expect(tags.get(103401)).toMatchObject({ groupId: 1034, name: '队列：重负' });
+    expect(tags.get(102201)).toMatchObject({ groupId: 1022, name: '环境：再构成' });
+    expect(tags.get(102202)).toMatchObject({ groupId: 1022, name: '环境：再构成' });
+  });
+
+  it('has mechanism entries for all newly introduced criterion groups', () => {
+    expect(CRITERION_MECHANISMS[1021]?.levelCount).toBe(3);
+    expect(CRITERION_MECHANISMS[1016]?.levelCount).toBe(1);
+    expect(CRITERION_MECHANISMS[1022]?.levelCount).toBe(2);
+    expect(CRITERION_MECHANISMS[1034]?.levelCount).toBe(1);
+  });
+});
 
 describe('external attributePercent (final multiplier)', () => {
   it('applies external as an independent final multiplier on the sheet path', () => {

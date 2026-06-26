@@ -3,7 +3,7 @@ import type { WeaponSheet } from '../../../types';
 const sheet: WeaponSheet = {
   rarity: 6,
   type: 'polearm',
-  icon: '/weapons/polearm/wpn_polearm_0014.png',
+  icon: '/weapons/polearm/wpn_polearm_0015.webp',
   baseAtk: [51, 146, 247, 348, 449, 500],
   skill1: {
     effects: [

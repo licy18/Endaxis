@@ -278,6 +278,40 @@
                 "formation": "",
                 "battleHud": ""
               }
+            },
+            {
+              "id": 102103,
+              "groupId": 1021,
+              "name": "环境：时限",
+              "description": "倒计时-100/-200/-300秒",
+              "rawDescription": "倒计时-{@102101@-time:0}/-{@102102@-time:0}/<color=#cc9900>-{-time:0}</color>秒",
+              "icon": "icon_activity_contract_tag_301",
+              "iconPath": "/contingency_contract/1/icon_activity_contract_tag_301.webp",
+              "roman": "Ⅲ",
+              "score": 3,
+              "keyId": "",
+              "lockIds": [],
+              "unlockScore": 0,
+              "unlockActivityStage": "activity_contingency_contract_0_stage_2",
+              "conflictId": "c1021",
+              "canPreview": false,
+              "terms": [
+                {
+                  "termType": 3,
+                  "buffId": "global_buff_cc_level_countdown_reduce",
+                  "blackboard": [
+                    {
+                      "key": "time",
+                      "value": -300,
+                      "valueStr": ""
+                    }
+                  ]
+                }
+              ],
+              "tips": {
+                "formation": "",
+                "battleHud": ""
+              }
             }
           ]
         },
@@ -871,6 +905,45 @@
           "groupId": 1033,
           "tags": [
             {
+              "id": 103401,
+              "groupId": 1034,
+              "name": "队列：重负",
+              "description": "主控干员12秒内未对敌人造成重击时，暂停技力自然恢复",
+              "rawDescription": "主控干员12秒内未对敌人造成重击时，暂停技力自然恢复",
+              "icon": "icon_activity_contract_tag_312",
+              "iconPath": "/contingency_contract/1/icon_activity_contract_tag_312.webp",
+              "roman": "",
+              "score": 1,
+              "keyId": "",
+              "lockIds": [],
+              "unlockScore": 1,
+              "unlockActivityStage": "activity_contingency_contract_0_stage_2",
+              "conflictId": "",
+              "canPreview": false,
+              "terms": [
+                {
+                  "termType": 2,
+                  "buffId": "global_buff_cc_chr_no_lastcombo_stop_atb_recover",
+                  "blackboard": [
+                    {
+                      "key": "ratio",
+                      "value": -1,
+                      "valueStr": ""
+                    },
+                    {
+                      "key": "duration",
+                      "value": 12,
+                      "valueStr": ""
+                    }
+                  ]
+                }
+              ],
+              "tips": {
+                "formation": "",
+                "battleHud": ""
+              }
+            },
+            {
               "id": 103302,
               "groupId": 1033,
               "name": "环境：同步生长",
@@ -1395,6 +1468,36 @@
                 "formation": "",
                 "battleHud": ""
               }
+            },
+            {
+              "id": 101603,
+              "groupId": 1016,
+              "name": "改写：热量汲取",
+              "description": "敌人对主控干员施加<color=#009cad>寒冷附着</color>时，转为直接施加<color=#009cad>冻结</color>",
+              "rawDescription": "敌人对主控干员施加<color=#009cad>寒冷附着</color>时，转为直接施加<color=#009cad>冻结</color>",
+              "icon": "icon_activity_contract_tag_135",
+              "iconPath": "/contingency_contract/1/icon_activity_contract_tag_135.webp",
+              "roman": "",
+              "score": 2,
+              "keyId": "",
+              "lockIds": [
+                "key2"
+              ],
+              "unlockScore": 10,
+              "unlockActivityStage": "activity_contingency_contract_0_stage_2",
+              "conflictId": "",
+              "canPreview": false,
+              "terms": [
+                {
+                  "termType": 1,
+                  "buffId": "buff_cc_enemy_cryst_inflict_to_frozen",
+                  "blackboard": []
+                }
+              ],
+              "tips": {
+                "formation": "",
+                "battleHud": ""
+              }
             }
           ]
         },
@@ -1608,6 +1711,72 @@
                       "valueStr": ""
                     }
                   ]
+                }
+              ],
+              "tips": {
+                "formation": "",
+                "battleHud": ""
+              }
+            }
+          ]
+        },
+        {
+          "id": "23",
+          "groupId": 1022,
+          "tags": [
+            {
+              "id": 102201,
+              "groupId": 1022,
+              "name": "环境：再构成",
+              "description": "最终波次的“刚角天使”与“重刺天使”变为“刚角天使α”与“重刺天使α”",
+              "rawDescription": "最终波次的“刚角天使”与“重刺天使”变为“刚角天使α”与“重刺天使α”",
+              "icon": "icon_activity_contract_tag_310",
+              "iconPath": "/contingency_contract/1/icon_activity_contract_tag_310.webp",
+              "roman": "Ⅰ",
+              "score": 2,
+              "keyId": "",
+              "lockIds": [
+                "key2"
+              ],
+              "unlockScore": 10,
+              "unlockActivityStage": "activity_contingency_contract_0_stage_2",
+              "conflictId": "c1022",
+              "canPreview": false,
+              "terms": [
+                {
+                  "termType": 2,
+                  "buffId": "global_buff_cc_level_elite_levelup",
+                  "blackboard": []
+                }
+              ],
+              "tips": {
+                "formation": "",
+                "battleHud": ""
+              }
+            },
+            {
+              "id": 102202,
+              "groupId": 1022,
+              "name": "环境：再构成",
+              "description": "第三、四波次的“刚角天使”与“重刺天使”变为“刚角天使α”与“重刺天使α”",
+              "rawDescription": "第三、四波次的“刚角天使”与“重刺天使”变为“刚角天使α”与“重刺天使α”",
+              "icon": "icon_activity_contract_tag_311",
+              "iconPath": "/contingency_contract/1/icon_activity_contract_tag_311.webp",
+              "roman": "Ⅱ",
+              "score": 3,
+              "keyId": "",
+              "lockIds": [
+                "key2"
+              ],
+              "unlockScore": 10,
+              "unlockActivityStage": "activity_contingency_contract_0_stage_2",
+              "conflictId": "c1022",
+              "canPreview": false,
+              "terms": [
+                {
+                  "termType": 2,
+                  "buffId": "global_buff_cc_level_elite_levelup_2",
+                  "blackboard": []
                 }
               ],
               "tips": {
