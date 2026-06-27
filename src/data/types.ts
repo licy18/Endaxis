@@ -320,6 +320,13 @@ export interface EffectBase {
 
   /** When true, effect duration is not extended by freeze events (combo/ultimate animations). */
   ignoreTimeShift?: boolean;
+
+  /**
+   * Hit-attached effects normally apply after the hit damage is calculated.
+   * `beforeDamage` lets a specific hit effect apply first when its own hit must
+   * benefit from triggers caused by that effect.
+   */
+  applyTiming?: 'beforeDamage' | 'afterDamage';
 }
 
 // ─── Effect Subtypes ────────────────────────────────────────────────────────
@@ -504,6 +511,7 @@ export type PatchableEffectBaseFields = Pick<
   | 'icd'
   | 'icdGroup'
   | 'hide'
+  | 'applyTiming'
 >;
 
 export type PatchableStatusEffectFields = PatchableEffectBaseFields &

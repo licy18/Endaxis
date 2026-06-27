@@ -9,6 +9,7 @@ import { projectActionBuffs } from "./projection/projectActionBuffs";
 import { createDefaultStats } from "@/simulation/defaultActorStats";
 import { collectTriggerEffects, patchCombatSkills } from "@/data/collect";
 import estellaSheet from "@/data/operators/estella";
+import perlicaSheet from "@/data/operators/perlica";
 import mifuSheet from "@/data/operators/mifu";
 import { extractRawEntries, resolveHitsFromSheet } from "@/stores/timeline/resolveHits";
 import type { BaseStatValues } from "@/data/stats/types";
@@ -237,6 +238,19 @@ function resolveSheetHits(
   const segment = flatSkills[skillKey]?.segments?.[segmentIndex];
   const rawEntries = extractRawEntries({ segments: [segment] }, 0);
   return resolveHitsFromSheet([], rawEntries, 0, { preserveCondition: true });
+}
+
+function resolveOperatorSheetHits(
+  sheet: Parameters<typeof patchCombatSkills>[0],
+  skillKey: string,
+  segmentIndex = 0,
+  levelIndex = 11,
+  potential = 0,
+): ReturnType<typeof resolveHitsFromSheet> {
+  const flatSkills = patchCombatSkills(sheet, { talentStates: {}, potential });
+  const segment = flatSkills[skillKey]?.segments?.[segmentIndex];
+  const rawEntries = extractRawEntries({ segments: [segment] }, 0);
+  return resolveHitsFromSheet([], rawEntries, levelIndex, { preserveCondition: true });
 }
 
 describe("optimizer-native runtime parity", () => {
@@ -983,6 +997,58 @@ describe("optimizer-native runtime parity", () => {
       end: 1,
       stacks: 1,
     });
+  });
+
+  it("lets Perlica combo damage benefit from potential 3 before the hit resolves", () => {
+    const runPerlicaCombo = (potential: number) => {
+      const comboHits = resolveOperatorSheetHits(perlicaSheet, "comboSkill", 0, 11, potential);
+      const tracks = [
+        createTrack("perlica", [
+          createAction("perlica_combo", "comboSkill", {
+            startTime: 0,
+            skillId: "perlica_combo",
+            element: "electric",
+            hits: comboHits,
+          }),
+        ]),
+      ];
+      const operatorInstances = [createOperatorInstance("op_perlica", "perlica")];
+      operatorInstances[0]!.potential = potential;
+      const team = createTeam("op_perlica");
+      const triggerEffects = collectRuntimeTriggers(team, operatorInstances, [], [], tracks);
+      const result = runScenario(tracks, registry(triggerEffects));
+      const comboHit = result.simLog.find(
+        (entry) =>
+          entry.type === "DAMAGE_HIT" &&
+          entry.payload.actionId === "perlica_combo_inst" &&
+          entry.payload.hitData.triggeredBy == null,
+      );
+      if (!comboHit || comboHit.type !== "DAMAGE_HIT") {
+        throw new Error("Missing Perlica combo damage hit");
+      }
+      return { result, hit: comboHit.payload.hitData };
+    };
+
+    const potential2 = runPerlicaCombo(2);
+    const potential3 = runPerlicaCombo(3);
+    const potential4 = runPerlicaCombo(4);
+
+    expect(potential3.hit._damageBreakdown?.attack).toBeGreaterThan(
+      potential2.hit._damageBreakdown?.attack ?? 0,
+    );
+    expect(potential4.hit._expectedDamage).toBeGreaterThan(potential3.hit._expectedDamage ?? 0);
+    expect(potential4.result.operatorLog).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "OPERATOR_EFFECT_APPLY",
+          targetTrackId: "perlica",
+          value: 20,
+          effect: expect.objectContaining({
+            stat: expect.objectContaining({ modifier: "atkPercent" }),
+          }),
+        }),
+      ]),
+    );
   });
 
   it("applies grizzled-edge 3-piece bonus at 1.5x when consuming physical vulnerability", () => {

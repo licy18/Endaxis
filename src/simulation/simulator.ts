@@ -6,7 +6,10 @@ import {
   getReactionMultiplier,
 } from "@/data/stats/computeReactionDamage";
 import type { TriggerRegistry } from "./engine/TriggerRegistry";
-import type { OperatorStat } from "@/data/types";
+import type { Effect, OperatorStat, ResolvedEffect } from "@/data/types";
+import { isEnemyEffect } from "@/data/types";
+import { resolveEffectDefaults, resolveEffectLifecycle } from "@/data/effectPresets";
+import type { EnemyEffectApplyEvent } from "@/simulation/engine/types";
 import type { BaseStatValues } from "@/data/stats/types";
 import type { EnemyResistance } from "@/data/enemyResistance";
 import { normalizeEnemyResistance } from "@/data/enemyResistance";
@@ -42,6 +45,89 @@ interface SimulationOptions {
   endlineTime?: number;
   lmdiAttributionMode?: "stacks" | "applier";
   controlledOperatorSegments?: ControlSegment[];
+}
+
+const BEFORE_DAMAGE_EPSILON = 1e-6;
+
+function buildBeforeDamageEnemyEffectEvents(
+  effects: readonly (Effect | ResolvedEffect)[] | undefined,
+  time: number,
+  sourceId: string,
+  actionId: string,
+  skillType?: string,
+  skillId?: string,
+): EnemyEffectApplyEvent[] {
+  if (!effects?.length) return [];
+  const events: EnemyEffectApplyEvent[] = [];
+
+  for (const effect of effects) {
+    if (effect.applyTiming !== "beforeDamage") continue;
+    if (!isEnemyEffect(effect)) continue;
+
+    const resolved = resolveEffectDefaults(effect as any) as Effect | ResolvedEffect;
+    const lifecycle = resolveEffectLifecycle(resolved);
+    const base = {
+      type: "ENEMY_EFFECT_APPLY" as const,
+      time,
+      sourceId,
+      sourceSkillType: skillType,
+      sourceSkillId: skillId,
+      actionId,
+    };
+
+    switch (resolved.kind) {
+      case "infliction":
+        events.push({
+          ...base,
+          kind: "infliction",
+          element: resolved.element,
+          stacks: lifecycle.stacks,
+          effectiveDuration: lifecycle.duration,
+        });
+        break;
+      case "physicalStatus":
+        events.push({
+          ...base,
+          kind: "physicalStatus",
+          physicalType: resolved.physicalType,
+          forced: resolved.forced,
+          effectiveness:
+            typeof resolved.effectiveness === "number" ? resolved.effectiveness : undefined,
+          effectiveDuration: lifecycle.duration,
+        });
+        break;
+      case "reaction":
+        events.push({
+          ...base,
+          kind: "reaction",
+          reactionType: resolved.reactionType as any,
+          level: resolved.defaultLevel ?? 1,
+          requiresInfliction: resolved.requiresInfliction,
+          effectiveness: resolved.effectiveness,
+          effectiveDuration: lifecycle.duration,
+          forced: true,
+        });
+        break;
+      case "status":
+        events.push({
+          ...base,
+          kind: "status",
+          id: resolved.id || resolved.name || "status",
+          stat: resolved.stat as any,
+          value: typeof resolved.value === "number" ? resolved.value : 0,
+          stacks: typeof lifecycle.stacks === "number" ? lifecycle.stacks : 1,
+          maxStacks: lifecycle.maxStacks,
+          expiresAt: time + lifecycle.duration,
+          icon: Array.isArray(resolved.icon) ? resolved.icon[0] : resolved.icon,
+          effect: resolved,
+          silent: resolved.silent,
+          external: resolved.external,
+        });
+        break;
+    }
+  }
+
+  return events;
 }
 
 export function simulate(
@@ -537,6 +623,17 @@ export function simulate(
     }
 
     action.resolvedHits.forEach((hit) => {
+      for (const event of buildBeforeDamageEnemyEffectEvents(
+        hit.effects,
+        Math.max(0, hit.realTime - BEFORE_DAMAGE_EPSILON),
+        action.trackId,
+        action.id,
+        hit.skillType,
+        hit.skillId,
+      )) {
+        engine.enqueue(event, -1);
+      }
+
       engine.enqueue({
         type: "DAMAGE_HIT",
         time: hit.realTime,

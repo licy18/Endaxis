@@ -214,6 +214,7 @@ const sheet: OperatorSheet = {
                       kind: 'reaction',
                       reactionType: 'electrification',
                       duration: 5,
+                      applyTiming: 'beforeDamage',
                     },
                   ],
                 },

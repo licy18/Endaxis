@@ -33,6 +33,7 @@ import {
   computeLevelCoefficient,
   computeArtsIntensityDamageMult,
 } from '@/data/stats/computeReactionDamage';
+import type { Effect, ResolvedEffect } from '@/data/types';
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,13 @@ function applyEnemyDamageCapToBreakdown(
     windowEnd: capped.windowEnd,
   };
   return breakdown;
+}
+
+function afterDamageEffects(
+  effects: readonly (Effect | ResolvedEffect)[] | undefined,
+): readonly (Effect | ResolvedEffect)[] | undefined {
+  if (!effects?.length) return effects;
+  return effects.filter(effect => effect.applyTiming !== 'beforeDamage');
 }
 
 export class HitHandler implements EventHandler<HitEvent> {
@@ -540,8 +548,10 @@ export class HitHandler implements EventHandler<HitEvent> {
     }
 
     // Dispatch enemy-targeting effects from this hit
+    const postDamageEffects = afterDamageEffects(hit.effects);
+
     dispatchEnemyEffects(
-      hit.effects,
+      postDamageEffects,
       e.time,
       sourceId,
       ctx,
@@ -552,7 +562,7 @@ export class HitHandler implements EventHandler<HitEvent> {
       hit.skillId,
     );
     // Dispatch self/team-targeting effects from this hit
-    dispatchActorEffects(hit.effects, {
+    dispatchActorEffects(postDamageEffects, {
       time: e.time,
       sourceTrackId: sourceId,
       ctx,
