@@ -307,6 +307,7 @@ export class SimulationEngine {
         const actor = this.actors.find(a => a.id === trackId);
         return {
           acceptTeamUltEnergy: actor?.acceptTeamUltEnergy ?? true,
+          acceptSelfSpCostUltEnergy: actor?.acceptSelfSpCostUltEnergy ?? true,
           ultimateEnergyCostOverride: actor?.ultimateEnergyCostOverride,
         };
       },

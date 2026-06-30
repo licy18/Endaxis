@@ -25,6 +25,7 @@ export interface SimulationContext {
   /** Returns actor-level config flags for a given track. */
   getActorMeta: (trackId: string) => {
     acceptTeamUltEnergy: boolean;
+    acceptSelfSpCostUltEnergy: boolean;
     ultimateEnergyCostOverride?: number | null;
   };
   /** All track IDs currently active in the simulation. */

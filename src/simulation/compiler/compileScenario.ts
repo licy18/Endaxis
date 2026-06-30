@@ -136,6 +136,7 @@ function processActors(tracks: ScenarioTrack[]): ActorSnapshot[] {
           triggerEffects: track.triggerEffects || [],
           acceptTeamGauge: track.acceptTeamGauge !== false,
           acceptTeamUltEnergy: track.acceptTeamUltEnergy ?? track.acceptTeamGauge !== false,
+          acceptSelfSpCostUltEnergy: track.acceptSelfSpCostUltEnergy !== false,
           ultimateEnergyCostOverride: maxGauge,
           resources: {
             hp: track.stats.hp,

@@ -90,7 +90,7 @@ const OPTIMIZER_TO_DISPLAY_TYPE = {
     dive: 'dive',
 }
 const DEFAULT_BATTLE_SKILL_UE = 0
-const DEFAULT_COMBO_SKILL_UE = 10
+const DEFAULT_COMBO_SKILL_UE = 0
 const LEGACY_WEAPON_STATUS_KEY = `weapon${'Statuses'}`
 const resolveActionOptimizerSkillType = (action) => {
     if (!action) return null
@@ -2700,6 +2700,8 @@ export const useTimelineStore = defineStore('timeline', () => {
                 ultimate_gaugeMax: maxUltimateGauge,
                 acceptTeamGauge,
                 accept_team_gauge: acceptTeamGauge,
+                acceptSelfSpCostUltEnergy: operator?.acceptSelfSpCostUltEnergy !== false,
+                accept_self_sp_cost_ult_energy: operator?.acceptSelfSpCostUltEnergy !== false,
                 beta: !!entry?.beta,
                 new: !!entry?.new,
             }

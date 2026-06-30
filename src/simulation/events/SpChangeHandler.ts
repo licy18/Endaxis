@@ -4,8 +4,6 @@ import type { SimulationContext } from '@/simulation/engine/SimulationContext.ts
 import type { TriggerRegistry } from '@/simulation/engine/TriggerRegistry';
 import { passesSkillFilter } from '@/data/filter';
 
-const ULT_ENERGY_PER_RECOVERED_SP = 6.5 / 100;
-
 export class SpChangeHandler implements EventHandler<SpChangeEvent> {
   private registry?: TriggerRegistry;
   constructor(registry?: TriggerRegistry) {
@@ -55,10 +53,11 @@ export class SpChangeHandler implements EventHandler<SpChangeEvent> {
       }
     } else if (sp < 0) {
       // Consumption: consume returned SP first, then recovered
-      const { returnedConsumed } = ctx.state.team.consumeSp(-sp);
+      const { recoveredConsumed, returnedConsumed } = ctx.state.team.consumeSp(-sp);
       // Stamp returned SP consumed on the action for UE scaling in ActionEndHandler
       const action = ctx.getAction(e.payload.sourceId);
       if (action) {
+        (action as any)._recoveredConsumed = recoveredConsumed;
         (action as any)._returnedConsumed = returnedConsumed;
         (action as any)._actualSpCost = -sp;
       }
@@ -84,18 +83,6 @@ export class SpChangeHandler implements EventHandler<SpChangeEvent> {
 
     // Only trigger onSpRecovery for recovery-type gains
     if (sp > 0 && !isReturn) {
-      const ultEnergyGain = sp * ULT_ENERGY_PER_RECOVERED_SP;
-      if (ultEnergyGain > 0) {
-        ctx.queue.enqueue({
-          type: 'ULT_ENERGY_CHANGE',
-          time: e.time,
-          payload: {
-            actorId: e.payload.actorId,
-            change: ultEnergyGain,
-            sourceId: e.payload.sourceId,
-          },
-        });
-      }
       this.registry?.onSpRecovery({ ...e, payload: { ...e.payload, spChange: sp } }, ctx);
     }
   }

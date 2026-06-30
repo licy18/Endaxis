@@ -14,6 +14,7 @@ export interface ActorSnapshot {
   triggerEffects?: any[];
   acceptTeamGauge?: boolean;
   acceptTeamUltEnergy?: boolean;
+  acceptSelfSpCostUltEnergy?: boolean;
   ultimateEnergyCostOverride?: number | null;
   resources: {
     hp: number;

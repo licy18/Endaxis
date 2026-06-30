@@ -308,7 +308,7 @@ describe("optimizer-native runtime parity", () => {
     ]));
     expect(enabled.enemyLog.length).toBeGreaterThan(0);
     expect(enabled.state.snapshot().enemy.stagger).toBe(30);
-    expect(enabled.state.snapshot().actors[0]?.resources.gauge).toBeCloseTo(0.975);
+    expect(enabled.state.snapshot().actors[0]?.resources.gauge).toBeCloseTo(2.6);
   });
 
   it("resets stagger carryover when switching to an enemy with different stagger config", () => {
@@ -505,6 +505,7 @@ describe("optimizer-native runtime parity", () => {
           id: "alpha",
           element: "heat",
           accept_team_gauge: false,
+          accept_self_sp_cost_ult_energy: false,
           maxUltimateGauge: 150,
         },
       ],
@@ -537,6 +538,7 @@ describe("optimizer-native runtime parity", () => {
       element: "heat",
       acceptTeamGauge: false,
       acceptTeamUltEnergy: false,
+      acceptSelfSpCostUltEnergy: false,
       ultimateEnergyCostOverride: 150,
     });
     expect(compiled?.triggerRegistry).toBeInstanceOf(TriggerRegistry);
@@ -548,6 +550,44 @@ describe("optimizer-native runtime parity", () => {
     expect(compiled?.enemyDef).toBe(100);
     expect(compiled?.endlineTime).toBe(9);
     expect(compiled?.lmdiAttributionMode).toBe("applier");
+  });
+
+  it("keeps existing combo ultimate energy fields unchanged at the Endaxis compile boundary", () => {
+    const tracks = [
+      createTrack("avywenna", [
+        createAction("combo", "comboSkill", {
+          gaugeGain: 10,
+          hits: [{ offset: 0, multiplier: 0, spRecovery: 0, spReturn: 0, stagger: 0 }],
+        }),
+      ]),
+      createTrack("beta", []),
+    ];
+
+    const compiled = compileEndaxisScenario({
+      scenarioData: createScenario(tracks),
+      tracks,
+      characterRoster: [
+        {
+          id: "avywenna",
+          element: "electric",
+          comboSkill_ultimateEnergyGain: 0,
+          maxUltimateGauge: 100,
+        },
+        {
+          id: "beta",
+          element: "physical",
+          maxUltimateGauge: 100,
+        },
+      ],
+      systemConstants: {
+        maxSp: 300,
+        initialSp: 123,
+        spRegenRate: 8,
+        skillSpCostDefault: 100,
+      },
+    });
+
+    expect(compiled?.timeline.actions[0]?.node.gaugeGain).toBe(10);
   });
 
   it("routes newly resolved arts infliction effects from sheet hits into enemyLog", () => {
@@ -1676,42 +1716,79 @@ describe("optimizer-native runtime parity", () => {
     expect(gaugeEntry?.payload.gauge).toBe(15);
   });
 
-  it("converts recovered SP to ultimate energy but excludes returned SP", () => {
+  it("converts consumed recovered SP to battle-skill ultimate energy but excludes returned SP", () => {
     const simulation = runScenario([
       createTrack(
         "alpha",
         [
-          createAction("recover-sp", "battleSkill", {
+          createAction("spend-recovered-sp", "battleSkill", {
             startTime: 0,
             duration: 1,
+            spCost: 100,
             gaugeGain: 0,
             teamGaugeGain: 0,
-            hits: [
-              {
-                offset: 0,
-                multiplier: 0,
-                spRecovery: 100,
-                spReturn: 0,
-                stagger: 0,
-              },
-            ],
-          }),
-          createAction("return-sp", "battleSkill", {
-            startTime: 2,
-            duration: 1,
-            gaugeGain: 0,
-            teamGaugeGain: 0,
-            hits: [
-              {
-                offset: 0,
-                multiplier: 0,
-                spRecovery: 0,
-                spReturn: 100,
-                stagger: 0,
-              },
-            ],
           }),
         ],
+        {
+          maxGaugeOverride: 100,
+          stats: { ult_charge_eff: 100 },
+        },
+      ),
+      createTrack(
+        "beta",
+        [],
+        {
+          maxGaugeOverride: 100,
+          stats: { ult_charge_eff: 100 },
+        },
+      ),
+    ]);
+
+    const ueEntries = simulation.simLog.filter(
+      (entry) => entry.type === "ULT_ENERGY_CHANGE",
+    );
+
+    expect(ueEntries).toHaveLength(2);
+    expect(ueEntries.map((entry) => entry.payload)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: "alpha",
+          sourceId: "spend-recovered-sp_inst",
+          change: 6.5,
+          gauge: 6.5,
+        }),
+        expect.objectContaining({
+          actorId: "beta",
+          sourceId: "spend-recovered-sp_inst",
+          change: 6.5,
+          gauge: 6.5,
+        }),
+      ]),
+    );
+  });
+
+  it("lets actors opt out of self SP-cost ultimate energy while still granting team energy", () => {
+    const simulation = runScenario([
+      createTrack(
+        "alpha",
+        [
+          createAction("spend-recovered-sp", "battleSkill", {
+            startTime: 0,
+            duration: 1,
+            spCost: 100,
+            gaugeGain: 0,
+            teamGaugeGain: 0,
+          }),
+        ],
+        {
+          maxGaugeOverride: 100,
+          stats: { ult_charge_eff: 100 },
+          acceptSelfSpCostUltEnergy: false,
+        },
+      ),
+      createTrack(
+        "beta",
+        [],
         {
           maxGaugeOverride: 100,
           stats: { ult_charge_eff: 100 },
@@ -1725,14 +1802,54 @@ describe("optimizer-native runtime parity", () => {
 
     expect(ueEntries).toHaveLength(1);
     expect(ueEntries[0]?.payload).toMatchObject({
-      actorId: "alpha",
-      sourceId: "recover-sp_inst",
+      actorId: "beta",
+      sourceId: "spend-recovered-sp_inst",
       change: 6.5,
       gauge: 6.5,
     });
+    expect(simulation.state.snapshot().actors.find((actor) => actor.id === "alpha")?.resources.gauge)
+      .toBe(0);
   });
 
-  it("does not apply fixed battle-skill ultimate energy when no SP is recovered", () => {
+  it("does not convert returned SP consumption into battle-skill ultimate energy", () => {
+    const simulation = runScenario(
+      [
+        createTrack(
+          "alpha",
+          [
+            createAction("return-sp-setup", "basicAttack", {
+              startTime: 0,
+              duration: 0.1,
+              gaugeGain: 0,
+              spGain: 100,
+              spGainKind: "refund",
+            }),
+            createAction("spend-returned-sp", "battleSkill", {
+              startTime: 1,
+              duration: 1,
+              spCost: 100,
+              gaugeGain: 0,
+              teamGaugeGain: 0,
+            }),
+          ],
+          {
+            maxGaugeOverride: 100,
+            stats: { ult_charge_eff: 100 },
+          },
+        ),
+      ],
+      undefined,
+      { systemConstants: { spRegenRate: 0 } },
+    );
+
+    const ueEntries = simulation.simLog.filter(
+      (entry) => entry.type === "ULT_ENERGY_CHANGE",
+    );
+
+    expect(ueEntries).toEqual([]);
+  });
+
+  it("does not apply default battle-skill ultimate energy when no SP is recovered", () => {
     const simulation = runScenario([
       createTrack(
         "alpha",
@@ -1743,8 +1860,6 @@ describe("optimizer-native runtime parity", () => {
             spCost: 0,
             gaugeGain: 6.5,
             teamGaugeGain: 6.5,
-            ultimateEnergyGain: 6.5,
-            teamUltimateEnergyGain: 6.5,
             hits: [
               {
                 offset: 0,
@@ -1770,6 +1885,56 @@ describe("optimizer-native runtime parity", () => {
       .toBe(0);
     expect(simulation.state.snapshot().actors.find((actor) => actor.id === "beta")?.resources.gauge)
       .toBe(0);
+  });
+
+  it("applies explicit fixed battle-skill ultimate energy when no SP is consumed", () => {
+    const simulation = runScenario([
+      createTrack(
+        "alpha",
+        [
+          createAction("fixed-free-battle", "battleSkill", {
+            startTime: 0,
+            duration: 1,
+            spCost: 0,
+            ultimateEnergyGain: 6.5,
+            teamUltimateEnergyGain: 6.5,
+            hits: [
+              {
+                offset: 0,
+                multiplier: 0,
+                spRecovery: 0,
+                spReturn: 0,
+                stagger: 0,
+              },
+            ],
+          }),
+        ],
+        { maxGaugeOverride: 100 },
+      ),
+      createTrack("beta", [], { maxGaugeOverride: 100 }),
+    ]);
+
+    const ueEntries = simulation.simLog.filter(
+      (entry) => entry.type === "ULT_ENERGY_CHANGE",
+    );
+
+    expect(ueEntries).toHaveLength(2);
+    expect(ueEntries.map((entry) => entry.payload)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: "alpha",
+          sourceId: "fixed-free-battle_inst",
+          change: 6.5,
+          gauge: 6.5,
+        }),
+        expect.objectContaining({
+          actorId: "beta",
+          sourceId: "fixed-free-battle_inst",
+          change: 6.5,
+          gauge: 6.5,
+        }),
+      ]),
+    );
   });
 
   it("does not consume link stacks when the active action branch is treated as comboSkill", () => {

@@ -103,6 +103,7 @@ export interface ScenarioTrack {
   ultimate_gaugeMax?: number | null;
   acceptTeamGauge?: boolean;
   acceptTeamUltEnergy?: boolean;
+  acceptSelfSpCostUltEnergy?: boolean;
   ultimateEnergyCostOverride?: number | null;
   operatorStatus?: OperatorStatus | null;
   baseStats?: BaseStatValues | null;

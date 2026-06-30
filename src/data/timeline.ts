@@ -42,7 +42,7 @@ const SKILL_ICON_FILE: Record<string, string> = {
 // ─── Default UE / SP constants ──────────────────────────────────────────────
 
 const BATTLE_SKILL_SP_COST = 100;
-const COMBO_SKILL_UE = 10;
+const COMBO_SKILL_UE = 0;
 
 /**
  * Resolve a leveled value (number or number[]) to a scalar using a 0-based level index.
@@ -119,6 +119,7 @@ export function getCharacterRoster(): any[] {
       name: getOperatorGameName(slug),
       avatar: `/operators/${slug}/avatar.webp`,
       accept_team_ult_energy: op.acceptTeamUltEnergy ?? true,
+      accept_self_sp_cost_ult_energy: op.acceptSelfSpCostUltEnergy ?? true,
       exclusive_buffs: op.exclusiveBuffs || [],
       // Finisher
       finisher_duration: finSeg?.duration ?? 0,

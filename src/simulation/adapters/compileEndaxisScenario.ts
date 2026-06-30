@@ -95,11 +95,24 @@ function buildCompiledTracks(tracks: any[], characterRoster: any[]) {
     const charInfo = (characterRoster || []).find((character) => character.id === track.id)
     const dynamicMaxGauge = resolveDynamicMaxGauge(track, charInfo)
     const trackGaugeOverride = Number(track.maxGaugeOverride) > 0 ? Number(track.maxGaugeOverride) : null
+    const acceptTeamUltEnergy =
+      track?.acceptTeamUltEnergy ??
+      charInfo?.acceptTeamUltEnergy ??
+      charInfo?.accept_team_ult_energy ??
+      charInfo?.accept_team_gauge ??
+      track?.acceptTeamGauge ??
+      true
+
     return {
       ...track,
       element: charInfo?.element || track.element || "physical",
-      acceptTeamGauge: charInfo?.accept_team_gauge !== false,
-      acceptTeamUltEnergy: charInfo?.accept_team_gauge !== false,
+      acceptTeamGauge: acceptTeamUltEnergy !== false,
+      acceptTeamUltEnergy: acceptTeamUltEnergy !== false,
+      acceptSelfSpCostUltEnergy:
+        track?.acceptSelfSpCostUltEnergy ??
+        charInfo?.acceptSelfSpCostUltEnergy ??
+        charInfo?.accept_self_sp_cost_ult_energy ??
+        true,
       maxGaugeOverride: trackGaugeOverride,
       maxUltimateGauge: dynamicMaxGauge,
       ultimate_gaugeMax: dynamicMaxGauge,

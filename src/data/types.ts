@@ -903,6 +903,7 @@ export interface OperatorSheet {
   avatar?: string;
   talentIcons?: string[];
   acceptTeamUltEnergy?: boolean;
+  acceptSelfSpCostUltEnergy?: boolean;
   finisherElement: DamageElement;
   diveElement: DamageElement;
   /** Default potential for the "Max" button. When omitted, defaults to 5 for rarity <= 5. */
